@@ -1,0 +1,8 @@
+# Raw FX data (~18 MB) is fetched via fetch_data.py, not committed.
+/data/forex/*/*.csv
+__pycache__/
+*.pyc
+
+# Transient build/delivery artifacts (screenshots, packaged tarballs)
+report_*.png
+*.tar.gz

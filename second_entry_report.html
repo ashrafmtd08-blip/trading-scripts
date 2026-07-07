@@ -1,0 +1,499 @@
+<title>Second Entry (H2/L2) — FX Majors Backtest</title>
+<style>
+  :root {
+    --bg:#f4f5f2; --surface:#fbfbf9; --surface-2:#eef0ea;
+    --ink:#181d1c; --ink-2:#4b5350; --ink-3:#828c88; --line:#dcded7;
+    --gold:#b98a2e; --gold-soft:#cda349;
+    --pos:#1f8f6f; --neg:#c0523a;
+    --shadow:0 1px 2px rgba(20,28,26,.05),0 8px 26px rgba(20,28,26,.06);
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark) {
+    :root {
+      --bg:#0e1413; --surface:#141b1a; --surface-2:#1b2322;
+      --ink:#e9ede9; --ink-2:#a7b0ac; --ink-3:#6d7773; --line:#26302e;
+      --gold:#d3ac5a; --gold-soft:#c79f4e;
+      --pos:#43b892; --neg:#dd6b50;
+      --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 34px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg:#f4f5f2; --surface:#fbfbf9; --surface-2:#eef0ea;
+    --ink:#181d1c; --ink-2:#4b5350; --ink-3:#828c88; --line:#dcded7;
+    --gold:#b98a2e; --gold-soft:#cda349; --pos:#1f8f6f; --neg:#c0523a;
+    --shadow:0 1px 2px rgba(20,28,26,.05),0 8px 26px rgba(20,28,26,.06);
+  }
+  :root[data-theme="dark"] {
+    --bg:#0e1413; --surface:#141b1a; --surface-2:#1b2322;
+    --ink:#e9ede9; --ink-2:#a7b0ac; --ink-3:#6d7773; --line:#26302e;
+    --gold:#d3ac5a; --gold-soft:#c79f4e; --pos:#43b892; --neg:#dd6b50;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 34px rgba(0,0,0,.4);
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:1060px; margin:0 auto; padding:clamp(20px,4vw,52px) clamp(16px,4vw,40px) 80px; }
+  .num { font-family:var(--mono); font-variant-numeric:tabular-nums; }
+  .mut { color:var(--ink-3); }
+  .pos { color:var(--pos); } .neg { color:var(--neg); }
+
+  /* masthead */
+  header.mast { border-bottom:1px solid var(--line); padding-bottom:26px; margin-bottom:30px; }
+  .eyebrow { font-family:var(--mono); font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); margin:0 0 14px; }
+  h1 { font-family:var(--serif); font-weight:600; font-size:clamp(30px,5vw,46px); line-height:1.05; letter-spacing:-.01em; margin:0 0 14px; text-wrap:balance; }
+  h1 em { font-style:italic; color:var(--gold); }
+  .sub { color:var(--ink-2); font-size:16.5px; max-width:60ch; margin:0; }
+  .facts { display:flex; flex-wrap:wrap; gap:8px 10px; margin-top:20px; }
+  .chip { font-family:var(--mono); font-size:12.5px; color:var(--ink-2); background:var(--surface-2); border:1px solid var(--line); border-radius:999px; padding:5px 12px; }
+  .chip b { color:var(--ink); font-weight:600; }
+
+  /* verdict */
+  .verdict { display:flex; align-items:flex-start; gap:14px; background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--gold); border-radius:12px; padding:18px 20px; margin:0 0 30px; box-shadow:var(--shadow); }
+  .verdict .tag { font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); padding-top:3px; white-space:nowrap; }
+  .verdict p { margin:0; font-size:16px; color:var(--ink); }
+  .verdict b { color:var(--pos); }
+
+  /* KPI grid */
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-bottom:36px; }
+  .kpi { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow); }
+  .kpi .k { font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3); margin:0 0 8px; font-family:var(--mono); }
+  .kpi .v { font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:30px; font-weight:600; letter-spacing:-.02em; line-height:1; }
+  .kpi .d { font-size:12.5px; color:var(--ink-2); margin:8px 0 0; }
+
+  section { margin-bottom:40px; }
+  h2 { font-family:var(--serif); font-weight:600; font-size:22px; letter-spacing:-.01em; margin:0 0 4px; }
+  .lede { color:var(--ink-2); font-size:14.5px; margin:0 0 18px; max-width:64ch; }
+
+  /* chart */
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px; box-shadow:var(--shadow); }
+  .chart-wrap { position:relative; }
+  canvas { display:block; width:100%; height:auto; }
+  .tip { position:absolute; pointer-events:none; opacity:0; transition:opacity .1s; background:var(--ink); color:var(--bg); font-family:var(--mono); font-size:12px; padding:6px 9px; border-radius:7px; white-space:nowrap; transform:translate(-50%,-130%); z-index:5; }
+  .tip b { color:var(--gold-soft); }
+  .cap { font-size:12.5px; color:var(--ink-3); margin:12px 0 0; font-family:var(--mono); }
+
+  /* table */
+  .tbl-scroll { overflow-x:auto; border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); }
+  table { border-collapse:collapse; width:100%; min-width:720px; background:var(--surface); font-size:14px; }
+  thead th { font-family:var(--mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); text-align:right; padding:14px 14px; border-bottom:1px solid var(--line); font-weight:500; }
+  thead th:first-child { text-align:left; }
+  tbody td { padding:12px 14px; border-bottom:1px solid var(--line); text-align:right; }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr:hover { background:var(--surface-2); }
+  td.sym { text-align:left; font-family:var(--mono); font-weight:600; color:var(--ink); letter-spacing:.02em; }
+  .wr { display:flex; align-items:center; gap:9px; justify-content:flex-end; }
+  .wrbar { width:64px; height:6px; background:var(--surface-2); border-radius:99px; overflow:hidden; }
+  .wrbar span { display:block; height:100%; background:var(--ink-3); border-radius:99px; }
+  .wrnum { min-width:46px; }
+  .rbar { display:flex; align-items:center; gap:9px; justify-content:flex-end; }
+  .rbarfill { height:8px; background:linear-gradient(90deg,var(--gold-soft),var(--gold)); border-radius:4px; min-width:2px; }
+  .rnum { min-width:42px; color:var(--pos); font-weight:600; }
+  td.rej { color:var(--ink-2); font-size:12.5px; }
+  tr.total td { border-top:2px solid var(--line); font-weight:600; background:var(--surface-2); }
+  tr.total td.sym { color:var(--gold); }
+
+  /* gates */
+  .gates { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+  .gate { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow); }
+  .gate-h { display:flex; justify-content:space-between; align-items:baseline; font-family:var(--mono); font-size:13px; }
+  .gate-h .num { font-size:17px; font-weight:600; }
+  .gate-track { height:6px; background:var(--surface-2); border-radius:99px; margin:10px 0; overflow:hidden; }
+  .gate-fill { height:100%; background:var(--neg); opacity:.7; border-radius:99px; }
+  .gate p { margin:0; font-size:12.5px; color:var(--ink-2); line-height:1.5; }
+
+  /* method / caveats */
+  .method { columns:2; column-gap:34px; }
+  @media (max-width:640px) { .method { columns:1; } }
+  .method .item { break-inside:avoid; margin-bottom:18px; }
+  .method h3 { font-family:var(--mono); font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--gold); margin:0 0 5px; }
+  .method p { margin:0; font-size:13.5px; color:var(--ink-2); }
+  .warn { background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin-top:26px; }
+  .warn h3 { margin:0 0 6px; font-family:var(--serif); font-size:16px; }
+  .warn p { margin:0; font-size:13.5px; color:var(--ink-2); }
+  footer { margin-top:50px; padding-top:20px; border-top:1px solid var(--line); font-family:var(--mono); font-size:12px; color:var(--ink-3); display:flex; flex-wrap:wrap; gap:6px 16px; justify-content:space-between; }
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <p class="eyebrow">Strategy Backtest · FX Majors</p>
+    <h1>Second Entry <em>(H2/L2)</em> pull-back strategy</h1>
+    <p class="sub">A two-legged pull-back system — EMA(20) trend, a failed first
+    break (H1/L1), a deeper pull-back, then the second break as entry, gated by a
+    Fair Value Gap and a trend/ADX filter, with a fixed 2R target.
+    Replayed bar-by-bar across six major pairs.</p>
+    <div class="facts">
+      <span class="chip"><b>Timeframe</b> H4</span>
+      <span class="chip"><b>Window</b> 2010-01 → 2026-02</span>
+      <span class="chip"><b>Pairs</b> 6 majors</span>
+      <span class="chip"><b>Target</b> 2.0R fixed</span>
+      <span class="chip"><b>ADX ≥</b> 15</span>
+      <span class="chip"><b>Trades</b> 837</span>
+    </div>
+  </header>
+
+  <div class="verdict">
+    <span class="tag">Verdict</span>
+    <p>Across 837 tradeable signals the edge holds on every pair — a
+    <b>46.9% win rate at 2R</b> gives
+    <b>+0.41R per trade</b>, comfortably above the
+    33.3% break-even floor. Compounded over the window:
+    <b>+312R</b> with a shallow 9R peak-to-trough dip.
+    Costs (spread, slippage, commission) are <em>not</em> modelled.</p>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><p class="k">Win rate</p><div class="v">46.9%</div><p class="d">360 wins · 408 losses</p></div>
+    <div class="kpi"><p class="k">Expectancy</p><div class="v pos">+0.41R</div><p class="d">per resolved trade</p></div>
+    <div class="kpi"><p class="k">Total return</p><div class="v pos">+312R</div><p class="d">sum of R, 2010–2026</p></div>
+    <div class="kpi"><p class="k">Profit factor</p><div class="v">1.76</div><p class="d">gross win ÷ gross loss</p></div>
+    <div class="kpi"><p class="k">Max drawdown</p><div class="v">−9R</div><p class="d">worst peak-to-trough</p></div>
+    <div class="kpi"><p class="k">Break-even</p><div class="v mut">33.3%</div><p class="d">floor at 2R</p></div>
+  </div>
+
+  <section>
+    <h2>Equity curve</h2>
+    <p class="lede">Cumulative R over all 768 resolved trades from the six pairs,
+    ordered by signal date. Each win adds 2R, each loss subtracts 1R.</p>
+    <div class="card">
+      <div class="chart-wrap">
+        <canvas id="eq" width="1000" height="380" aria-label="Cumulative R equity curve"></canvas>
+        <div class="tip" id="tip"></div>
+      </div>
+      <p class="cap">One risk unit = 1R. Diversifying across six pairs keeps the deepest dip to just 9R.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Per-pair breakdown</h2>
+    <p class="lede">Every major cleared the 33.3% break-even
+    hurdle and posted positive expectancy. GBPUSD led, USDCAD lagged.</p>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr>
+          <th>Pair</th><th>Trades</th><th>W/L</th><th>Win rate</th>
+          <th>Expectancy</th><th>Total R</th><th>PF</th><th>Cxl</th>
+          <th>Rej T/E/Q/F</th>
+        </tr></thead>
+        <tbody>
+      <tr>
+        <td class="sym">EURUSD</td>
+        <td class="num">176</td>
+        <td class="num">73<span class="mut">/</span>91</td>
+        <td class="num">
+          <div class="wr">
+            <div class="wrbar"><span style="width:44.5%"></span></div>
+            <span class="wrnum">44.5%</span>
+          </div>
+        </td>
+        <td class="num pos">+0.34R</td>
+        <td class="num">
+          <div class="rbar">
+            <div class="rbarfill" style="width:67.1%"></div>
+            <span class="rnum">+55R</span>
+          </div>
+        </td>
+        <td class="num">1.60</td>
+        <td class="num mut">12</td>
+        <td class="num rej" title="Trend / EMA-touch / Quality / FVG">433<span class="mut">/</span>80<span class="mut">/</span>409<span class="mut">/</span>307</td>
+      </tr>
+      <tr>
+        <td class="sym">GBPUSD</td>
+        <td class="num">144</td>
+        <td class="num">70<span class="mut">/</span>58</td>
+        <td class="num">
+          <div class="wr">
+            <div class="wrbar"><span style="width:54.7%"></span></div>
+            <span class="wrnum">54.7%</span>
+          </div>
+        </td>
+        <td class="num pos">+0.64R</td>
+        <td class="num">
+          <div class="rbar">
+            <div class="rbarfill" style="width:100.0%"></div>
+            <span class="rnum">+82R</span>
+          </div>
+        </td>
+        <td class="num">2.41</td>
+        <td class="num mut">16</td>
+        <td class="num rej" title="Trend / EMA-touch / Quality / FVG">359<span class="mut">/</span>81<span class="mut">/</span>431<span class="mut">/</span>317</td>
+      </tr>
+      <tr>
+        <td class="sym">USDJPY</td>
+        <td class="num">142</td>
+        <td class="num">62<span class="mut">/</span>68</td>
+        <td class="num">
+          <div class="wr">
+            <div class="wrbar"><span style="width:47.7%"></span></div>
+            <span class="wrnum">47.7%</span>
+          </div>
+        </td>
+        <td class="num pos">+0.43R</td>
+        <td class="num">
+          <div class="rbar">
+            <div class="rbarfill" style="width:68.3%"></div>
+            <span class="rnum">+56R</span>
+          </div>
+        </td>
+        <td class="num">1.82</td>
+        <td class="num mut">12</td>
+        <td class="num rej" title="Trend / EMA-touch / Quality / FVG">472<span class="mut">/</span>48<span class="mut">/</span>363<span class="mut">/</span>287</td>
+      </tr>
+      <tr>
+        <td class="sym">USDCHF</td>
+        <td class="num">142</td>
+        <td class="num">64<span class="mut">/</span>66</td>
+        <td class="num">
+          <div class="wr">
+            <div class="wrbar"><span style="width:49.2%"></span></div>
+            <span class="wrnum">49.2%</span>
+          </div>
+        </td>
+        <td class="num pos">+0.48R</td>
+        <td class="num">
+          <div class="rbar">
+            <div class="rbarfill" style="width:75.6%"></div>
+            <span class="rnum">+62R</span>
+          </div>
+        </td>
+        <td class="num">1.94</td>
+        <td class="num mut">12</td>
+        <td class="num rej" title="Trend / EMA-touch / Quality / FVG">625<span class="mut">/</span>49<span class="mut">/</span>483<span class="mut">/</span>287</td>
+      </tr>
+      <tr>
+        <td class="sym">USDCAD</td>
+        <td class="num">150</td>
+        <td class="num">56<span class="mut">/</span>86</td>
+        <td class="num">
+          <div class="wr">
+            <div class="wrbar"><span style="width:39.4%"></span></div>
+            <span class="wrnum">39.4%</span>
+          </div>
+        </td>
+        <td class="num pos">+0.18R</td>
+        <td class="num">
+          <div class="rbar">
+            <div class="rbarfill" style="width:31.7%"></div>
+            <span class="rnum">+26R</span>
+          </div>
+        </td>
+        <td class="num">1.30</td>
+        <td class="num mut">8</td>
+        <td class="num rej" title="Trend / EMA-touch / Quality / FVG">482<span class="mut">/</span>59<span class="mut">/</span>431<span class="mut">/</span>334</td>
+      </tr>
+      <tr>
+        <td class="sym">AUDUSD</td>
+        <td class="num">83</td>
+        <td class="num">35<span class="mut">/</span>39</td>
+        <td class="num">
+          <div class="wr">
+            <div class="wrbar"><span style="width:47.3%"></span></div>
+            <span class="wrnum">47.3%</span>
+          </div>
+        </td>
+        <td class="num pos">+0.42R</td>
+        <td class="num">
+          <div class="rbar">
+            <div class="rbarfill" style="width:37.8%"></div>
+            <span class="rnum">+31R</span>
+          </div>
+        </td>
+        <td class="num">1.79</td>
+        <td class="num mut">9</td>
+        <td class="num rej" title="Trend / EMA-touch / Quality / FVG">349<span class="mut">/</span>16<span class="mut">/</span>213<span class="mut">/</span>161</td>
+      </tr>
+          <tr class="total">
+            <td class="sym">ALL</td>
+            <td class="num">837</td>
+            <td class="num">360<span class="mut">/</span>408</td>
+            <td class="num">46.9%</td>
+            <td class="num pos">+0.41R</td>
+            <td class="num pos">+312R</td>
+            <td class="num">1.76</td>
+            <td class="num mut">69</td>
+            <td class="num rej">2720<span class="mut">/</span>333<span class="mut">/</span>2330<span class="mut">/</span>1693</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap">Cxl = pending order expired unfilled. Rej = candidates killed by the Trend / EMA-touch / Quality / FVG gate.</p>
+  </section>
+
+  <section>
+    <h2>What the filters throw away</h2>
+    <p class="lede">The engine scanned 8,341 raw H2/L2 patterns and let only
+    837 through to trade. Here's which gate rejected the most (by first-failing gate).</p>
+    <div class="gates">
+      <div class="gate">
+        <div class="gate-h"><span>Trend / ADX</span><span class="num">2,720</span></div>
+        <div class="gate-track"><div class="gate-fill" style="width:100.0%"></div></div>
+        <p>EMA slope wrong way or ADX below 15 — no established trend.</p>
+      </div>
+      <div class="gate">
+        <div class="gate-h"><span>Bar quality</span><span class="num">2,330</span></div>
+        <div class="gate-track"><div class="gate-fill" style="width:85.7%"></div></div>
+        <p>H2/L2 bar didn't close with the break in the upper/lower half of its range.</p>
+      </div>
+      <div class="gate">
+        <div class="gate-h"><span>FVG</span><span class="num">1,693</span></div>
+        <div class="gate-track"><div class="gate-fill" style="width:62.2%"></div></div>
+        <p>No Fair Value Gap on the signal candle or the one right after it.</p>
+      </div>
+      <div class="gate">
+        <div class="gate-h"><span>EMA touch</span><span class="num">333</span></div>
+        <div class="gate-track"><div class="gate-fill" style="width:12.2%"></div></div>
+        <p>Pull-back never came within 300 points of the EMA.</p>
+      </div></div>
+  </section>
+
+  <section>
+    <h2>Method &amp; caveats</h2>
+    <div class="method">
+      <div class="item"><h3>Data</h3><p>H4 OHLC for the six majors, 2010→Feb 2026 (~1,550 bars/pair/year). H4 is the finest timeframe available for all majors in the free source used.</p></div>
+      <div class="item"><h3>Fill model</h3><p>Signals become buy/sell-stop pending orders that expire after 12 bars. A fill needs the bar's high/low to reach the entry; unfilled orders are cancelled, not counted as trades.</p></div>
+      <div class="item"><h3>Win / loss</h3><p>Once filled, the trade is walked forward against real highs/lows — whichever of SL or TP is hit first decides it. Ties within one bar are scored as losses (conservative).</p></div>
+      <div class="item"><h3>Not modelled</h3><p>No spread, slippage or commission — exactly as the session notes flag. On H4 majors spread is a small fraction of a typical stop, but it still trims the real edge.</p></div>
+      <div class="item"><h3>Timeframe note</h3><p>The notes developed this on Gold M5. Point-based inputs (EMA-touch 300 pts, buffer 20 pts) are mapped per symbol; behaviour on H4 FX differs from M5 metal.</p></div>
+      <div class="item"><h3>EA extras</h3><p>The live EA adds 1%-risk position sizing and break-even at 1R. Neither is in this win-rate methodology, which mirrors the indicator's on-chart replay.</p></div>
+    </div>
+    <div class="warn">
+      <h3>Read this before trading it</h3>
+      <p>A frictionless backtest is an upper bound, not a forecast. The result says the
+      <em>pattern</em> carried a positive expectancy on historical H4 data — it does not
+      account for spread/slippage, execution gaps, regime change, or the fact that these
+      inputs were tuned on a different instrument and timeframe. Validate on a demo /
+      Strategy Tester with real costs before risking capital.</p>
+    </div>
+  </section>
+
+  <footer>
+    <span>Second Entry (H2/L2) · forward-replay backtest</span>
+    <span>H4 · 2010-01–2026-02 · 837 trades · no costs modelled</span>
+  </footer>
+</div>
+
+<script>
+const DATA = {"equity":[["2010-01-13",-1.0],["2010-01-17",1.0],["2010-01-17",0.0],["2010-02-03",2.0],["2010-02-10",1.0],["2010-02-10",0.0],["2010-03-15",2.0],["2010-03-22",4.0],["2010-03-22",6.0],["2010-03-25",5.0],["2010-03-25",4.0],["2010-03-28",3.0],["2010-04-13",2.0],["2010-04-23",1.0],["2010-04-27",3.0],["2010-05-18",2.0],["2010-06-02",1.0],["2010-06-15",3.0],["2010-06-30",2.0],["2010-07-06",4.0],["2010-07-07",6.0],["2010-07-28",5.0],["2010-08-04",4.0],["2010-08-23",6.0],["2010-08-26",8.0],["2010-09-01",7.0],["2010-09-02",9.0],["2010-09-09",8.0],["2010-09-12",10.0],["2010-09-15",9.0],["2010-09-19",8.0],["2010-09-28",10.0],["2010-09-28",9.0],["2010-10-04",8.0],["2010-10-05",10.0],["2010-10-18",12.0],["2010-11-09",11.0],["2010-11-09",10.0],["2010-11-12",12.0],["2010-12-09",14.0],["2010-12-10",13.0],["2010-12-13",15.0],["2010-12-27",14.0],["2011-01-18",13.0],["2011-02-04",12.0],["2011-02-09",11.0],["2011-02-09",13.0],["2011-02-14",12.0],["2011-03-16",11.0],["2011-03-16",10.0],["2011-03-18",12.0],["2011-03-29",11.0],["2011-04-12",10.0],["2011-04-25",9.0],["2011-04-27",8.0],["2011-05-02",10.0],["2011-05-02",12.0],["2011-05-03",11.0],["2011-05-11",13.0],["2011-05-12",12.0],["2011-05-13",14.0],["2011-05-24",13.0],["2011-05-26",15.0],["2011-06-02",17.0],["2011-06-08",16.0],["2011-06-15",15.0],["2011-06-28",17.0],["2011-07-01",16.0],["2011-07-15",15.0],["2011-07-20",17.0],["2011-07-20",16.0],["2011-07-25",18.0],["2011-07-26",17.0],["2011-07-28",16.0],["2011-08-03",18.0],["2011-08-17",17.0],["2011-08-17",16.0],["2011-09-08",15.0],["2011-09-14",14.0],["2011-09-19",13.0],["2011-09-19",12.0],["2011-09-29",11.0],["2011-09-29",10.0],["2011-10-03",9.0],["2011-10-06",11.0],["2011-10-06",13.0],["2011-10-07",12.0],["2011-10-26",11.0],["2011-11-22",13.0],["2011-11-30",15.0],["2011-12-06",14.0],["2011-12-16",16.0],["2011-12-28",18.0],["2012-02-01",20.0],["2012-02-07",22.0],["2012-02-22",21.0],["2012-03-06",23.0],["2012-03-12",22.0],["2012-04-02",21.0],["2012-04-16",20.0],["2012-04-27",19.0],["2012-05-10",21.0],["2012-05-28",23.0],["2012-05-28",25.0],["2012-06-07",24.0],["2012-06-27",23.0],["2012-07-02",25.0],["2012-07-10",24.0],["2012-07-17",23.0],["2012-07-17",22.0],["2012-07-24",21.0],["2012-07-30",20.0],["2012-08-02",19.0],["2012-08-29",18.0],["2012-09-05",20.0],["2012-10-05",19.0],["2012-10-17",21.0],["2012-10-31",20.0],["2012-10-31",19.0],["2012-12-06",18.0],["2012-12-20",17.0],["2013-01-03",19.0],["2013-01-08",21.0],["2013-01-17",23.0],["2013-01-22",22.0],["2013-02-06",21.0],["2013-02-22",20.0],["2013-03-03",19.0],["2013-03-07",18.0],["2013-03-07",17.0],["2013-03-27",16.0],["2013-03-31",18.0],["2013-03-31",20.0],["2013-04-04",19.0],["2013-04-08",18.0],["2013-04-11",20.0],["2013-04-11",22.0],["2013-04-17",24.0],["2013-04-30",23.0],["2013-04-30",25.0],["2013-05-14",27.0],["2013-05-14",29.0],["2013-05-16",31.0],["2013-05-20",30.0],["2013-05-21",29.0],["2013-05-28",28.0],["2013-05-30",27.0],["2013-05-31",29.0],["2013-06-05",31.0],["2013-06-12",30.0],["2013-06-14",29.0],["2013-06-19",31.0],["2013-07-01",33.0],["2013-07-09",32.0],["2013-07-09",34.0],["2013-07-23",33.0],["2013-07-23",32.0],["2013-07-30",34.0],["2013-07-31",33.0],["2013-08-19",35.0],["2013-08-22",34.0],["2013-09-02",36.0],["2013-09-04",35.0],["2013-09-05",34.0],["2013-09-10",36.0],["2013-09-13",38.0],["2013-09-15",37.0],["2013-09-18",39.0],["2013-10-02",41.0],["2013-10-02",43.0],["2013-10-03",45.0],["2013-10-06",44.0],["2013-10-08",46.0],["2013-10-11",48.0],["2013-10-14",47.0],["2013-10-22",49.0],["2013-10-22",51.0],["2013-10-25",50.0],["2013-11-01",52.0],["2013-11-06",54.0],["2013-11-11",53.0],["2013-11-19",55.0],["2013-11-24",54.0],["2013-11-26",56.0],["2013-12-06",58.0],["2013-12-30",57.0],["2014-01-06",59.0],["2014-01-29",58.0],["2014-02-05",57.0],["2014-02-24",59.0],["2014-02-28",58.0],["2014-03-14",57.0],["2014-03-31",56.0],["2014-04-03",58.0],["2014-04-09",57.0],["2014-04-14",59.0],["2014-05-08",61.0],["2014-05-20",60.0],["2014-06-09",59.0],["2014-06-25",61.0],["2014-06-27",60.0],["2014-06-30",62.0],["2014-07-01",61.0],["2014-07-21",63.0],["2014-07-21",62.0],["2014-07-23",64.0],["2014-07-29",66.0],["2014-07-31",68.0],["2014-08-20",67.0],["2014-08-22",69.0],["2014-08-28",68.0],["2014-09-18",70.0],["2014-09-23",69.0],["2014-09-26",71.0],["2014-10-08",70.0],["2014-11-05",72.0],["2014-11-12",74.0],["2014-11-17",76.0],["2014-11-26",75.0],["2015-01-12",77.0],["2015-01-13",79.0],["2015-01-13",81.0],["2015-01-22",83.0],["2015-01-27",85.0],["2015-02-02",84.0],["2015-03-04",86.0],["2015-03-09",88.0],["2015-04-08",90.0],["2015-04-14",89.0],["2015-04-15",91.0],["2015-04-27",93.0],["2015-05-05",95.0],["2015-05-15",94.0],["2015-05-22",96.0],["2015-06-01",95.0],["2015-06-19",94.0],["2015-06-25",93.0],["2015-07-03",92.0],["2015-07-09",91.0],["2015-07-22",93.0],["2015-08-13",92.0],["2015-08-19",94.0],["2015-08-25",93.0],["2015-08-25",92.0],["2015-10-08",94.0],["2015-10-13",96.0],["2015-10-28",95.0],["2015-11-03",94.0],["2015-11-13",93.0],["2015-11-23",95.0],["2015-12-02",97.0],["2015-12-02",96.0],["2015-12-07",98.0],["2015-12-10",100.0],["2015-12-11",102.0],["2015-12-11",104.0],["2015-12-16",103.0],["2015-12-22",102.0],["2015-12-22",101.0],["2015-12-29",100.0],["2015-12-30",102.0],["2016-01-05",104.0],["2016-01-08",103.0],["2016-01-08",102.0],["2016-01-15",104.0],["2016-01-26",103.0],["2016-02-02",102.0],["2016-02-10",101.0],["2016-02-26",103.0],["2016-03-07",102.0],["2016-04-04",104.0],["2016-04-14",103.0],["2016-04-26",102.0],["2016-05-17",104.0],["2016-05-17",106.0],["2016-06-13",108.0],["2016-06-16",107.0],["2016-06-19",106.0],["2016-06-20",105.0],["2016-06-23",104.0],["2016-06-28",103.0],["2016-06-28",102.0],["2016-07-04",104.0],["2016-07-12",106.0],["2016-07-14",108.0],["2016-07-20",107.0],["2016-07-26",106.0],["2016-08-12",108.0],["2016-08-22",107.0],["2016-08-25",106.0],["2016-09-05",108.0],["2016-09-08",107.0],["2016-09-08",106.0],["2016-09-08",105.0],["2016-09-15",107.0],["2016-09-19",109.0],["2016-09-26",108.0],["2016-10-13",107.0],["2016-10-24",106.0],["2016-11-02",108.0],["2016-11-17",110.0],["2016-11-17",112.0],["2016-11-17",114.0],["2016-11-25",113.0],["2016-11-29",112.0],["2016-12-14",114.0],["2016-12-14",113.0],["2016-12-19",115.0],["2017-01-02",114.0],["2017-01-03",113.0],["2017-01-09",112.0],["2017-01-09",111.0],["2017-01-09",110.0],["2017-01-11",112.0],["2017-01-13",114.0],["2017-01-20",116.0],["2017-01-25",115.0],["2017-01-31",117.0],["2017-02-12",116.0],["2017-02-13",118.0],["2017-02-14",117.0],["2017-02-14",116.0],["2017-02-22",115.0],["2017-02-28",117.0],["2017-03-08",119.0],["2017-03-30",121.0],["2017-04-05",123.0],["2017-04-17",125.0],["2017-04-20",127.0],["2017-04-21",126.0],["2017-04-21",128.0],["2017-05-08",130.0],["2017-05-16",132.0],["2017-05-25",131.0],["2017-06-05",130.0],["2017-06-21",129.0],["2017-06-27",131.0],["2017-07-05",130.0],["2017-07-14",132.0],["2017-07-19",134.0],["2017-07-20",136.0],["2017-07-26",138.0],["2017-08-02",137.0],["2017-08-24",136.0],["2017-09-01",135.0],["2017-09-07",137.0],["2017-09-12",139.0],["2017-09-15",141.0],["2017-09-28",143.0],["2017-10-26",145.0],["2017-10-31",144.0],["2017-11-03",143.0],["2017-11-06",142.0],["2017-12-05",141.0],["2017-12-12",140.0],["2017-12-18",139.0],["2017-12-29",141.0],["2018-01-04",143.0],["2018-01-04",145.0],["2018-01-11",147.0],["2018-01-12",149.0],["2018-01-16",148.0],["2018-01-23",150.0],["2018-02-07",152.0],["2018-02-27",154.0],["2018-03-08",153.0],["2018-04-13",152.0],["2018-04-16",151.0],["2018-04-17",150.0],["2018-04-24",152.0],["2018-04-30",154.0],["2018-05-07",153.0],["2018-05-08",152.0],["2018-05-08",151.0],["2018-05-20",150.0],["2018-05-23",152.0],["2018-05-24",151.0],["2018-05-29",150.0],["2018-06-12",149.0],["2018-07-10",148.0],["2018-07-19",147.0],["2018-07-25",149.0],["2018-07-30",151.0],["2018-08-06",153.0],["2018-08-08",155.0],["2018-08-09",157.0],["2018-08-29",159.0],["2018-08-29",158.0],["2018-09-05",157.0],["2018-09-11",156.0],["2018-09-11",158.0],["2018-09-12",160.0],["2018-09-20",162.0],["2018-09-24",161.0],["2018-09-27",163.0],["2018-10-08",165.0],["2018-10-10",164.0],["2018-10-18",166.0],["2018-10-29",168.0],["2018-11-07",167.0],["2018-11-08",169.0],["2018-11-13",168.0],["2018-11-16",170.0],["2018-11-16",169.0],["2018-11-26",168.0],["2018-11-26",170.0],["2018-12-18",172.0],["2018-12-20",174.0],["2018-12-23",176.0],["2019-01-06",178.0],["2019-01-13",177.0],["2019-01-17",176.0],["2019-01-28",178.0],["2019-01-29",180.0],["2019-02-07",179.0],["2019-02-14",181.0],["2019-02-22",183.0],["2019-02-27",185.0],["2019-03-07",187.0],["2019-03-13",186.0],["2019-03-14",185.0],["2019-03-18",187.0],["2019-04-02",186.0],["2019-04-16",185.0],["2019-04-22",187.0],["2019-04-22",186.0],["2019-04-24",188.0],["2019-05-05",187.0],["2019-05-07",186.0],["2019-05-08",185.0],["2019-05-16",184.0],["2019-05-17",183.0],["2019-05-27",182.0],["2019-06-26",184.0],["2019-07-22",186.0],["2019-07-31",188.0],["2019-07-31",187.0],["2019-08-06",189.0],["2019-08-06",191.0],["2019-08-12",190.0],["2019-08-27",189.0],["2019-08-29",191.0],["2019-09-10",193.0],["2019-09-12",192.0],["2019-09-18",191.0],["2019-09-20",190.0],["2019-09-24",189.0],["2019-09-25",191.0],["2019-09-29",193.0],["2019-10-18",195.0],["2019-10-30",197.0],["2019-11-01",196.0],["2019-11-01",195.0],["2019-11-04",194.0],["2019-11-07",193.0],["2019-11-15",195.0],["2019-11-29",194.0],["2019-11-29",193.0],["2019-12-04",192.0],["2019-12-11",194.0],["2019-12-15",196.0],["2019-12-24",198.0],["2020-01-21",197.0],["2020-01-29",199.0],["2020-01-29",201.0],["2020-01-29",200.0],["2020-02-04",199.0],["2020-02-05",201.0],["2020-02-07",200.0],["2020-02-10",199.0],["2020-02-28",201.0],["2020-03-11",203.0],["2020-04-09",205.0],["2020-04-09",207.0],["2020-04-12",209.0],["2020-04-13",211.0],["2020-04-17",210.0],["2020-04-20",212.0],["2020-04-23",211.0],["2020-04-27",213.0],["2020-05-04",212.0],["2020-05-20",211.0],["2020-06-09",213.0],["2020-06-09",212.0],["2020-06-09",211.0],["2020-06-18",210.0],["2020-06-23",209.0],["2020-07-10",208.0],["2020-07-27",207.0],["2020-07-30",209.0],["2020-07-30",211.0],["2020-07-30",213.0],["2020-08-11",215.0],["2020-08-11",214.0],["2020-08-12",216.0],["2020-08-24",215.0],["2020-08-27",214.0],["2020-09-04",216.0],["2020-09-11",215.0],["2020-09-25",214.0],["2020-09-30",216.0],["2020-10-13",215.0],["2020-10-27",217.0],["2020-10-27",219.0],["2020-10-29",221.0],["2020-10-30",220.0],["2020-11-19",219.0],["2020-11-25",218.0],["2020-12-15",220.0],["2020-12-24",219.0],["2021-01-04",221.0],["2021-01-06",220.0],["2021-01-06",219.0],["2021-01-07",218.0],["2021-01-28",217.0],["2021-01-28",216.0],["2021-02-08",218.0],["2021-02-11",217.0],["2021-02-22",219.0],["2021-02-22",218.0],["2021-02-24",217.0],["2021-02-26",219.0],["2021-03-09",218.0],["2021-03-09",217.0],["2021-03-12",216.0],["2021-03-16",215.0],["2021-03-17",214.0],["2021-03-22",216.0],["2021-03-30",215.0],["2021-04-02",214.0],["2021-04-16",213.0],["2021-04-21",212.0],["2021-04-22",214.0],["2021-04-30",216.0],["2021-05-03",218.0],["2021-05-11",217.0],["2021-05-18",219.0],["2021-06-15",218.0],["2021-06-15",220.0],["2021-07-12",219.0],["2021-07-23",218.0],["2021-07-28",220.0],["2021-08-18",219.0],["2021-08-25",218.0],["2021-08-25",217.0],["2021-08-27",216.0],["2021-09-01",215.0],["2021-09-06",214.0],["2021-09-10",213.0],["2021-09-21",212.0],["2021-09-29",214.0],["2021-10-04",216.0],["2021-10-06",218.0],["2021-10-15",217.0],["2021-10-20",216.0],["2021-10-26",215.0],["2021-10-26",214.0],["2021-10-28",213.0],["2021-11-01",215.0],["2021-11-03",214.0],["2021-11-04",216.0],["2021-11-05",218.0],["2021-11-09",220.0],["2021-11-18",222.0],["2021-11-19",221.0],["2021-11-29",223.0],["2021-12-01",225.0],["2021-12-02",227.0],["2021-12-14",226.0],["2022-01-03",228.0],["2022-01-20",230.0],["2022-01-30",229.0],["2022-02-03",228.0],["2022-02-22",227.0],["2022-03-01",229.0],["2022-03-07",231.0],["2022-03-11",230.0],["2022-03-14",232.0],["2022-04-12",231.0],["2022-04-12",233.0],["2022-04-18",235.0],["2022-04-26",237.0],["2022-04-26",239.0],["2022-05-04",238.0],["2022-05-06",240.0],["2022-05-22",242.0],["2022-05-22",241.0],["2022-05-24",243.0],["2022-05-31",242.0],["2022-05-31",244.0],["2022-06-09",246.0],["2022-06-09",245.0],["2022-06-14",244.0],["2022-06-29",243.0],["2022-06-30",245.0],["2022-07-04",247.0],["2022-07-12",249.0],["2022-07-28",248.0],["2022-08-17",250.0],["2022-08-18",252.0],["2022-08-22",251.0],["2022-08-30",253.0],["2022-09-02",252.0],["2022-09-08",254.0],["2022-09-19",253.0],["2022-09-20",255.0],["2022-09-30",254.0],["2022-10-04",253.0],["2022-10-24",255.0],["2022-11-15",257.0],["2022-11-16",256.0],["2022-11-17",255.0],["2022-11-18",257.0],["2022-11-29",256.0],["2022-11-29",255.0],["2022-12-04",254.0],["2022-12-06",253.0],["2022-12-06",252.0],["2022-12-07",251.0],["2022-12-07",250.0],["2022-12-23",249.0],["2023-01-15",248.0],["2023-01-20",250.0],["2023-01-30",252.0],["2023-02-01",251.0],["2023-03-01",253.0],["2023-03-07",255.0],["2023-03-09",257.0],["2023-03-09",256.0],["2023-03-15",258.0],["2023-03-16",260.0],["2023-03-20",259.0],["2023-03-30",258.0],["2023-04-10",257.0],["2023-04-11",256.0],["2023-04-11",258.0],["2023-04-19",257.0],["2023-04-28",259.0],["2023-04-28",261.0],["2023-05-12",260.0],["2023-05-31",262.0],["2023-06-06",261.0],["2023-06-13",263.0],["2023-06-14",265.0],["2023-07-06",264.0],["2023-08-02",266.0],["2023-08-02",265.0],["2023-08-09",264.0],["2023-09-06",266.0],["2023-09-08",265.0],["2023-09-20",264.0],["2023-09-20",266.0],["2023-09-20",265.0],["2023-09-29",264.0],["2023-10-09",266.0],["2023-10-17",268.0],["2023-11-03",270.0],["2023-11-14",269.0],["2023-11-23",271.0],["2023-11-24",273.0],["2023-11-28",275.0],["2023-12-06",274.0],["2023-12-06",276.0],["2023-12-18",278.0],["2024-01-04",277.0],["2024-01-18",276.0],["2024-01-26",278.0],["2024-01-30",277.0],["2024-02-07",279.0],["2024-02-12",281.0],["2024-02-22",280.0],["2024-02-28",279.0],["2024-03-05",278.0],["2024-03-11",277.0],["2024-03-14",279.0],["2024-03-18",281.0],["2024-04-04",283.0],["2024-04-08",282.0],["2024-04-12",284.0],["2024-04-12",286.0],["2024-04-24",285.0],["2024-04-25",284.0],["2024-04-26",283.0],["2024-04-28",282.0],["2024-05-13",281.0],["2024-06-03",280.0],["2024-06-17",282.0],["2024-06-19",284.0],["2024-06-26",283.0],["2024-07-18",285.0],["2024-07-30",287.0],["2024-08-07",286.0],["2024-08-13",288.0],["2024-08-22",290.0],["2024-08-28",289.0],["2024-08-28",288.0],["2024-09-05",287.0],["2024-09-05",286.0],["2024-09-11",285.0],["2024-09-15",287.0],["2024-09-18",286.0],["2024-09-24",288.0],["2024-10-08",290.0],["2024-10-23",289.0],["2024-10-30",288.0],["2024-10-30",287.0],["2024-11-01",286.0],["2024-11-03",285.0],["2024-11-03",284.0],["2024-11-05",283.0],["2024-11-08",285.0],["2024-11-13",287.0],["2024-11-13",286.0],["2024-11-15",288.0],["2024-11-20",287.0],["2024-12-09",286.0],["2024-12-12",288.0],["2024-12-27",290.0],["2024-12-30",289.0],["2025-01-23",291.0],["2025-01-23",293.0],["2025-01-31",295.0],["2025-02-06",294.0],["2025-02-06",293.0],["2025-02-23",292.0],["2025-03-17",294.0],["2025-03-19",293.0],["2025-04-03",292.0],["2025-04-08",291.0],["2025-04-16",290.0],["2025-04-20",289.0],["2025-05-06",291.0],["2025-05-09",293.0],["2025-05-09",295.0],["2025-05-12",294.0],["2025-05-14",293.0],["2025-05-15",292.0],["2025-05-20",294.0],["2025-05-20",296.0],["2025-05-22",298.0],["2025-05-22",300.0],["2025-06-25",302.0],["2025-07-02",301.0],["2025-07-10",303.0],["2025-07-23",302.0],["2025-07-23",301.0],["2025-07-25",300.0],["2025-07-30",299.0],["2025-08-06",301.0],["2025-08-12",300.0],["2025-09-05",299.0],["2025-09-24",301.0],["2025-11-03",303.0],["2025-11-12",305.0],["2025-11-18",307.0],["2025-11-21",309.0],["2025-11-28",308.0],["2025-12-10",310.0],["2025-12-15",309.0],["2025-12-23",308.0],["2025-12-23",307.0],["2026-01-02",309.0],["2026-01-04",311.0],["2026-01-16",310.0],["2026-01-23",312.0],["2026-01-27",314.0],["2026-01-28",313.0],["2026-02-05",312.0]],"pairs":[{"symbol":"EURUSD","trades":176,"wins":73,"losses":91,"cancelled":12,"win_rate":44.5,"expectancy":0.335,"total_r":55.0,"profit_factor":1.6,"trades_per_day":0.03,"candidates":1498,"rej":{"trend":433,"ema":80,"quality":409,"fvg":307}},{"symbol":"GBPUSD","trades":144,"wins":70,"losses":58,"cancelled":16,"win_rate":54.7,"expectancy":0.641,"total_r":82.0,"profit_factor":2.41,"trades_per_day":0.024,"candidates":1408,"rej":{"trend":359,"ema":81,"quality":431,"fvg":317}},{"symbol":"USDJPY","trades":142,"wins":62,"losses":68,"cancelled":12,"win_rate":47.7,"expectancy":0.431,"total_r":56.0,"profit_factor":1.82,"trades_per_day":0.024,"candidates":1369,"rej":{"trend":472,"ema":48,"quality":363,"fvg":287}},{"symbol":"USDCHF","trades":142,"wins":64,"losses":66,"cancelled":12,"win_rate":49.2,"expectancy":0.477,"total_r":62.0,"profit_factor":1.94,"trades_per_day":0.024,"candidates":1671,"rej":{"trend":625,"ema":49,"quality":483,"fvg":287}},{"symbol":"USDCAD","trades":150,"wins":56,"losses":86,"cancelled":8,"win_rate":39.4,"expectancy":0.183,"total_r":26.0,"profit_factor":1.3,"trades_per_day":0.026,"candidates":1540,"rej":{"trend":482,"ema":59,"quality":431,"fvg":334}},{"symbol":"AUDUSD","trades":83,"wins":35,"losses":39,"cancelled":9,"win_rate":47.3,"expectancy":0.419,"total_r":31.0,"profit_factor":1.79,"trades_per_day":0.014,"candidates":855,"rej":{"trend":349,"ema":16,"quality":213,"fvg":161}}]};
+(function(){
+  const root = document.documentElement;
+  const cv = document.getElementById('eq');
+  const tip = document.getElementById('tip');
+  const eq = DATA.equity;              // [[date, cumR], ...]
+  const ctx = cv.getContext('2d');
+  const DPR = Math.min(window.devicePixelRatio||1, 2);
+  let W, H, plot;
+
+  function css(v){ return getComputedStyle(root).getPropertyValue(v).trim(); }
+
+  function layout(){
+    const rect = cv.getBoundingClientRect();
+    W = rect.width; H = rect.height;
+    cv.width = W*DPR; cv.height = H*DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    plot = {l:52, r:16, t:16, b:30, w:W-68, h:H-46};
+  }
+
+  function scales(){
+    const xs = eq.map((_,i)=>i);
+    const ys = eq.map(d=>d[1]);
+    const minY = Math.min(0, ...ys), maxY = Math.max(...ys);
+    const padY = (maxY-minY)*0.06;
+    return {
+      x:i => plot.l + (i/(eq.length-1))*plot.w,
+      y:v => plot.t + plot.h - ((v-minY)/((maxY+padY)-minY))*plot.h,
+      minY, maxY:maxY+padY
+    };
+  }
+
+  function niceStep(range, target){
+    const raw = range/target, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw/mag; const s = n<1.5?1:n<3?2:n<7?5:10; return s*mag;
+  }
+
+  function draw(){
+    layout();
+    const s = scales();
+    ctx.clearRect(0,0,W,H);
+    const ink3 = css('--ink-3'), line = css('--line'), gold = css('--gold');
+    const goldSoft = css('--gold-soft'), ink2 = css('--ink-2');
+
+    // y grid
+    ctx.font = "11px ui-monospace,Menlo,monospace";
+    ctx.textBaseline = "middle";
+    const step = niceStep(s.maxY - s.minY, 5);
+    ctx.strokeStyle = line; ctx.fillStyle = ink3; ctx.lineWidth = 1;
+    for(let v=Math.ceil(s.minY/step)*step; v<=s.maxY; v+=step){
+      const y = s.y(v);
+      ctx.globalAlpha = v===0?0.9:0.5;
+      ctx.beginPath(); ctx.moveTo(plot.l, y); ctx.lineTo(plot.l+plot.w, y); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.textAlign="right";
+      ctx.fillText((v>0?'+':'')+v+'R', plot.l-8, y);
+    }
+
+    // x year ticks
+    ctx.textAlign="center"; ctx.textBaseline="top";
+    let lastYr=null;
+    eq.forEach((d,i)=>{
+      const yr = d[0].slice(0,4);
+      if(yr!==lastYr && (+yr)%3===0){
+        lastYr=yr;
+        const x=s.x(i);
+        ctx.fillStyle=ink3; ctx.fillText(yr, x, plot.t+plot.h+8);
+      } else if(yr!==lastYr){ lastYr=yr; }
+    });
+
+    // area fill
+    const grad = ctx.createLinearGradient(0,plot.t,0,plot.t+plot.h);
+    grad.addColorStop(0, hexA(goldSoft,0.28));
+    grad.addColorStop(1, hexA(goldSoft,0.02));
+    ctx.beginPath();
+    ctx.moveTo(s.x(0), s.y(eq[0][1]));
+    eq.forEach((d,i)=>ctx.lineTo(s.x(i), s.y(d[1])));
+    ctx.lineTo(s.x(eq.length-1), s.y(s.minY));
+    ctx.lineTo(s.x(0), s.y(s.minY));
+    ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+
+    // line
+    ctx.beginPath();
+    eq.forEach((d,i)=>{ const x=s.x(i), y=s.y(d[1]); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.strokeStyle=gold; ctx.lineWidth=2; ctx.lineJoin="round"; ctx.stroke();
+
+    // endpoint
+    const ex=s.x(eq.length-1), ey=s.y(eq[eq.length-1][1]);
+    ctx.beginPath(); ctx.arc(ex,ey,4,0,7); ctx.fillStyle=gold; ctx.fill();
+    ctx.beginPath(); ctx.arc(ex,ey,4,0,7);
+    ctx.strokeStyle=css('--surface'); ctx.lineWidth=2; ctx.stroke();
+
+    cv._s = s;
+  }
+
+  function hexA(hex,a){
+    hex=hex.replace('#',''); if(hex.length===3) hex=hex.split('').map(c=>c+c).join('');
+    const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  cv.addEventListener('mousemove', e=>{
+    const s=cv._s; if(!s) return;
+    const rect=cv.getBoundingClientRect();
+    const mx=e.clientX-rect.left;
+    let i=Math.round(((mx-plot.l)/plot.w)*(eq.length-1));
+    i=Math.max(0,Math.min(eq.length-1,i));
+    const d=eq[i];
+    tip.style.opacity=1;
+    tip.style.left=s.x(i)+'px';
+    tip.style.top=s.y(d[1])+'px';
+    tip.innerHTML=`<b>${(d[1]>0?'+':'')+d[1]}R</b> · ${d[0]} · #${i+1}`;
+  });
+  cv.addEventListener('mouseleave', ()=>tip.style.opacity=0);
+
+  const ro=new ResizeObserver(draw); ro.observe(cv);
+  draw();
+  matchMedia('(prefers-color-scheme:dark)').addEventListener('change', draw);
+  new MutationObserver(draw).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();
+</script>
