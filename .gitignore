@@ -1,5 +1,7 @@
-# Raw FX data (~18 MB) is fetched via fetch_data.py, not committed.
-/data/forex/*/*.csv
+# Raw FX data — fetched via the fetch_*.py scripts, not committed.
+second_entry_h2l2/data/forex/*/*.csv
+second_entry_h2l2/data/m1_parquet/
+*.parquet
 __pycache__/
 *.pyc
 
@@ -7,7 +9,3 @@ __pycache__/
 report_*.png
 tf_*.png
 *.tar.gz
-
-# M1 parquet cache (~545 MB) fetched via fetch_m1_data.py
-/data/m1_parquet/
-*.parquet

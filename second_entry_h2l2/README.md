@@ -1,8 +1,30 @@
 # Second Entry (H2/L2) — FX Majors Backtest
 
 Backtest of the **Second Entry (H2/L2)** pull-back strategy (from
-`SecondEntry_Session_Notes.md`) across six major FX pairs on **H4** data,
-2010-01 → 2026-02.
+`SecondEntry_Session_Notes.md`) across the major FX pairs. Self-contained —
+everything for this study lives in this folder; run all commands from here
+(`cd second_entry_h2l2`).
+
+Two studies are included:
+- **H4 majors**, 2010→2026 (`second_entry_report.html`).
+- **Intraday timeframe comparison** M3 vs M5 vs M15, 2015→2025
+  (`second_entry_timeframe_report.html`) — M5 most profitable by total R.
+
+### Layout
+```
+second_entry_h2l2/
+├── second_entry_backtest.py    # strategy engine + H4 backtest
+├── second_entry_strategy.json  # portable strategy spec (rules + params + results)
+├── timeframe_backtest.py       # M1→M3/M5/M15 resample + comparison
+├── build_report.py             # renders second_entry_report.html
+├── build_tf_report.py          # renders second_entry_timeframe_report.html
+├── fetch_data.py               # pulls H4 CSVs (not committed)
+├── fetch_m1_data.py            # pulls M1 parquet (not committed)
+├── backtest_results.json       # H4 results + equity curve
+├── timeframe_results.json      # timeframe-study results
+├── *.html                      # the two visual reports
+└── data/                       # fetched OHLC (gitignored)
+```
 
 ## Strategy (as implemented)
 
