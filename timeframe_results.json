@@ -1,0 +1,272 @@
+{
+  "meta": {
+    "strategy": "Second Entry (H2/L2)",
+    "source": "M1 resampled",
+    "pairs": [
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCHF",
+      "USDCAD",
+      "AUDUSD",
+      "NZDUSD"
+    ],
+    "window": "2015-2025",
+    "rr": 2.0,
+    "breakeven_win_rate": 33.3
+  },
+  "timeframes": {
+    "M3": {
+      "trades": 7174,
+      "wins": 2398,
+      "losses": 2663,
+      "cancelled": 2113,
+      "win_rate": 47.4,
+      "expectancy": 0.421,
+      "total_r": 2133.0,
+      "profit_factor": 1.8,
+      "trades_per_day": 1.786,
+      "candidates": 186640,
+      "pairs": {
+        "EURUSD": {
+          "trades": 994,
+          "wins": 307,
+          "losses": 371,
+          "win_rate": 45.3,
+          "expectancy": 0.358,
+          "total_r": 243.0,
+          "profit_factor": 1.65,
+          "trades_per_day": 0.247
+        },
+        "GBPUSD": {
+          "trades": 1601,
+          "wins": 624,
+          "losses": 627,
+          "win_rate": 49.9,
+          "expectancy": 0.496,
+          "total_r": 621.0,
+          "profit_factor": 1.99,
+          "trades_per_day": 0.399
+        },
+        "USDJPY": {
+          "trades": 1401,
+          "wins": 539,
+          "losses": 538,
+          "win_rate": 50.0,
+          "expectancy": 0.501,
+          "total_r": 540.0,
+          "profit_factor": 2.0,
+          "trades_per_day": 0.349
+        },
+        "USDCHF": {
+          "trades": 781,
+          "wins": 197,
+          "losses": 292,
+          "win_rate": 40.3,
+          "expectancy": 0.209,
+          "total_r": 102.0,
+          "profit_factor": 1.35,
+          "trades_per_day": 0.194
+        },
+        "USDCAD": {
+          "trades": 1113,
+          "wins": 373,
+          "losses": 414,
+          "win_rate": 47.4,
+          "expectancy": 0.422,
+          "total_r": 332.0,
+          "profit_factor": 1.8,
+          "trades_per_day": 0.277
+        },
+        "AUDUSD": {
+          "trades": 623,
+          "wins": 177,
+          "losses": 218,
+          "win_rate": 44.8,
+          "expectancy": 0.344,
+          "total_r": 136.0,
+          "profit_factor": 1.62,
+          "trades_per_day": 0.155
+        },
+        "NZDUSD": {
+          "trades": 661,
+          "wins": 181,
+          "losses": 203,
+          "win_rate": 47.1,
+          "expectancy": 0.414,
+          "total_r": 159.0,
+          "profit_factor": 1.78,
+          "trades_per_day": 0.165
+        }
+      }
+    },
+    "M5": {
+      "trades": 6429,
+      "wins": 2448,
+      "losses": 2736,
+      "cancelled": 1245,
+      "win_rate": 47.2,
+      "expectancy": 0.417,
+      "total_r": 2160.0,
+      "profit_factor": 1.79,
+      "trades_per_day": 1.6,
+      "candidates": 153299,
+      "pairs": {
+        "EURUSD": {
+          "trades": 909,
+          "wins": 362,
+          "losses": 358,
+          "win_rate": 50.3,
+          "expectancy": 0.508,
+          "total_r": 366.0,
+          "profit_factor": 2.02,
+          "trades_per_day": 0.226
+        },
+        "GBPUSD": {
+          "trades": 1417,
+          "wins": 550,
+          "losses": 633,
+          "win_rate": 46.5,
+          "expectancy": 0.395,
+          "total_r": 467.0,
+          "profit_factor": 1.74,
+          "trades_per_day": 0.353
+        },
+        "USDJPY": {
+          "trades": 1169,
+          "wins": 501,
+          "losses": 487,
+          "win_rate": 50.7,
+          "expectancy": 0.521,
+          "total_r": 515.0,
+          "profit_factor": 2.06,
+          "trades_per_day": 0.291
+        },
+        "USDCHF": {
+          "trades": 695,
+          "wins": 252,
+          "losses": 293,
+          "win_rate": 46.2,
+          "expectancy": 0.387,
+          "total_r": 211.0,
+          "profit_factor": 1.72,
+          "trades_per_day": 0.173
+        },
+        "USDCAD": {
+          "trades": 1048,
+          "wins": 375,
+          "losses": 482,
+          "win_rate": 43.8,
+          "expectancy": 0.313,
+          "total_r": 268.0,
+          "profit_factor": 1.56,
+          "trades_per_day": 0.261
+        },
+        "AUDUSD": {
+          "trades": 587,
+          "wins": 196,
+          "losses": 241,
+          "win_rate": 44.9,
+          "expectancy": 0.346,
+          "total_r": 151.0,
+          "profit_factor": 1.63,
+          "trades_per_day": 0.146
+        },
+        "NZDUSD": {
+          "trades": 604,
+          "wins": 212,
+          "losses": 242,
+          "win_rate": 46.7,
+          "expectancy": 0.401,
+          "total_r": 182.0,
+          "profit_factor": 1.75,
+          "trades_per_day": 0.15
+        }
+      }
+    },
+    "M15": {
+      "trades": 4563,
+      "wins": 1944,
+      "losses": 2092,
+      "cancelled": 527,
+      "win_rate": 48.2,
+      "expectancy": 0.445,
+      "total_r": 1796.0,
+      "profit_factor": 1.86,
+      "trades_per_day": 1.136,
+      "candidates": 85935,
+      "pairs": {
+        "EURUSD": {
+          "trades": 638,
+          "wins": 264,
+          "losses": 297,
+          "win_rate": 47.1,
+          "expectancy": 0.412,
+          "total_r": 231.0,
+          "profit_factor": 1.78,
+          "trades_per_day": 0.159
+        },
+        "GBPUSD": {
+          "trades": 821,
+          "wins": 345,
+          "losses": 394,
+          "win_rate": 46.7,
+          "expectancy": 0.401,
+          "total_r": 296.0,
+          "profit_factor": 1.75,
+          "trades_per_day": 0.204
+        },
+        "USDJPY": {
+          "trades": 830,
+          "wins": 372,
+          "losses": 386,
+          "win_rate": 49.1,
+          "expectancy": 0.472,
+          "total_r": 358.0,
+          "profit_factor": 1.93,
+          "trades_per_day": 0.207
+        },
+        "USDCHF": {
+          "trades": 545,
+          "wins": 207,
+          "losses": 258,
+          "win_rate": 44.5,
+          "expectancy": 0.335,
+          "total_r": 156.0,
+          "profit_factor": 1.6,
+          "trades_per_day": 0.136
+        },
+        "USDCAD": {
+          "trades": 758,
+          "wins": 336,
+          "losses": 326,
+          "win_rate": 50.8,
+          "expectancy": 0.523,
+          "total_r": 346.0,
+          "profit_factor": 2.06,
+          "trades_per_day": 0.189
+        },
+        "AUDUSD": {
+          "trades": 485,
+          "wins": 207,
+          "losses": 220,
+          "win_rate": 48.5,
+          "expectancy": 0.454,
+          "total_r": 194.0,
+          "profit_factor": 1.88,
+          "trades_per_day": 0.121
+        },
+        "NZDUSD": {
+          "trades": 486,
+          "wins": 213,
+          "losses": 211,
+          "win_rate": 50.2,
+          "expectancy": 0.507,
+          "total_r": 215.0,
+          "profit_factor": 2.02,
+          "trades_per_day": 0.121
+        }
+      }
+    }
+  }
+}

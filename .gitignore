@@ -5,4 +5,9 @@ __pycache__/
 
 # Transient build/delivery artifacts (screenshots, packaged tarballs)
 report_*.png
+tf_*.png
 *.tar.gz
+
+# M1 parquet cache (~545 MB) fetched via fetch_m1_data.py
+/data/m1_parquet/
+*.parquet
