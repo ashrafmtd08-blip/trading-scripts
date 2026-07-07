@@ -1,0 +1,94 @@
+{
+  "name": "Second Entry (H2/L2) pull-back",
+  "description": "Two-legged pull-back continuation strategy: EMA(20) trend, a failed first break (H1/L1), a deeper pull-back, then the second break as entry, gated by a Fair Value Gap and a trend/ADX filter, with a fixed 2R target.",
+  "engine": "second_entry_backtest.py",
+  "direction": "both (H2 long / L2 short mirror)",
+  "parameters": {
+    "ema_period": 20,
+    "adx_period": 14,
+    "adx_min_level": 15.0,
+    "trend_lookback_bars": 5,
+    "close_pos_ratio": 0.5,
+    "ema_touch_points": 300,
+    "buffer_points": 20,
+    "reward_risk": 2.0,
+    "pending_expiry_bars": 12
+  },
+  "rules": {
+    "trend": "close > EMA(20) = bull regime, close < EMA(20) = bear regime",
+    "leg1_H1": "first break of prior bar's high during a pull-back (recorded, not traded)",
+    "leg2_H2": "after a deeper pull-back extreme than the pre-H1 extreme, the next break is the signal",
+    "gates": [
+      "bar quality: signal bar closes with the break, in the upper/lower half of its range (>= close_pos_ratio)",
+      "EMA touch: pull-back came within ema_touch_points of the EMA",
+      "trend filter: EMA slope over trend_lookback_bars in trade direction AND ADX >= adx_min_level",
+      "FVG: signal candle or the candle right after it is the impulse (middle) bar of a 3-candle Fair Value Gap"
+    ],
+    "entry": "buy-stop at H2 high + buffer / sell-stop at L2 low - buffer",
+    "stop_loss": "FVG impulse candle low/high -/+ buffer",
+    "take_profit": "fixed reward_risk x risk (2R)"
+  },
+  "point_size": {
+    "jpy_pairs": 0.001,
+    "other": 1e-05
+  },
+  "methodology": "forward-replay vs real bar highs/lows; SL-first on ties; NO spread/slippage/commission modelled",
+  "results": {
+    "h4_majors_2010_2026": {
+      "pairs": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "USDCHF",
+        "USDCAD",
+        "AUDUSD"
+      ],
+      "trades": 837,
+      "win_rate_pct": 46.9,
+      "expectancy_R": 0.406,
+      "total_R": 312.0,
+      "profit_factor": 1.76
+    },
+    "intraday_timeframe_study_2015_2025": {
+      "pairs": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "USDCHF",
+        "USDCAD",
+        "AUDUSD",
+        "NZDUSD"
+      ],
+      "by_timeframe": {
+        "M3": {
+          "trades": 7174,
+          "win_rate_pct": 47.4,
+          "expectancy_R": 0.421,
+          "total_R": 2133.0,
+          "profit_factor": 1.8,
+          "avg_stop_pips": 10.9
+        },
+        "M5": {
+          "trades": 6429,
+          "win_rate_pct": 47.2,
+          "expectancy_R": 0.417,
+          "total_R": 2160.0,
+          "profit_factor": 1.79,
+          "avg_stop_pips": 12.5
+        },
+        "M15": {
+          "trades": 4563,
+          "win_rate_pct": 48.2,
+          "expectancy_R": 0.445,
+          "total_R": 1796.0,
+          "profit_factor": 1.86,
+          "avg_stop_pips": 17.7
+        }
+      },
+      "most_profitable_total_R": "M5",
+      "best_per_trade_edge": "M15"
+    }
+  },
+  "breakeven_win_rate_pct": 33.3,
+  "status": "PROVISIONAL \u2014 positive expectancy on historical mid-price data across all pairs and timeframes; NOT yet validated with transaction costs or out-of-sample. Not confirmed as a tradeable edge."
+}
