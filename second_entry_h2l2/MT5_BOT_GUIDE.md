@@ -135,6 +135,17 @@ bot to log in itself.
 python mt5_live_bot.py
 ```
 
+**Or just double-click (Windows) — no typing:**
+
+| Double-click | Does |
+|---|---|
+| `run_connection_test.bat` | Verifies the MT5 link (run this first) |
+| `run_bot.bat` | Starts the bot and **auto-restarts it** if it ever stops |
+| `install_autostart.bat` | Makes the bot relaunch on every VPS login/reboot |
+| `uninstall_autostart.bat` | Undoes the auto-start |
+
+See **`deploy_guide.html`** for the full Mac → Windows-VPS 24/7 walkthrough.
+
 - **First run it in DRY_RUN on a demo account for a few days.** Read the log:
   it prints every `SIGNAL`, every `[DRY] would send …`, and every skip reason.
 - When the dry-run orders look correct (right side, sane entry/SL/TP, sensible
