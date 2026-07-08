@@ -92,5 +92,13 @@
     }
   },
   "breakeven_win_rate_pct": 33.3,
-  "status": "PROVISIONAL \u2014 positive expectancy on historical mid-price data across all pairs and timeframes, now measured with trades held to real SL/TP (no artificial time-out). Still NOT validated with transaction costs or out-of-sample. Not confirmed as a tradeable edge."
+  "status": "PROVISIONAL \u2014 positive expectancy on historical mid-price data across all pairs and timeframes, now measured with trades held to real SL/TP (no artificial time-out). Still NOT validated with transaction costs or out-of-sample. Not confirmed as a tradeable edge.",
+  "default_execution_timeframe": "M3",
+  "execution": {
+    "module": "second_entry_execution.py",
+    "default_timeframe": "M3",
+    "resample_rule": "3min",
+    "live_bot": "mt5_live_bot.py (MetaTrader 5, defaults to M3)",
+    "note": "M3 is the default because it led on both total R and expectancy in the corrected study; it also has the tightest stops so is the most cost-sensitive. Switch the bot's EXEC_TF to M5/M15 for a more spread-robust run."
+  }
 }

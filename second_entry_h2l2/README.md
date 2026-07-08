@@ -18,6 +18,10 @@ second_entry_h2l2/
 ├── second_entry_backtest.py    # strategy engine + H4 backtest
 ├── second_entry_strategy.json  # portable strategy spec (rules + params + results)
 ├── timeframe_backtest.py       # M1→M3/M5/M15 resample + comparison
+├── second_entry_execution.py   # live signal generator — DEFAULT TIMEFRAME M3
+├── second_entry_m5_strategy.py # thin M5 shim over the execution module
+├── mt5_live_bot.py             # MetaTrader 5 auto-trading bot (defaults to M3)
+├── MT5_BOT_GUIDE.md            # setup / run / safety guide for the bot
 ├── build_report.py             # renders second_entry_report.html
 ├── build_tf_report.py          # renders second_entry_timeframe_report.html
 ├── fetch_data.py               # pulls H4 CSVs (not committed)
@@ -27,6 +31,11 @@ second_entry_h2l2/
 ├── *.html                      # the two visual reports
 └── data/                       # fetched OHLC (gitignored)
 ```
+
+**Default execution timeframe is M3** (highest total R *and* expectancy in the
+corrected study). The live bot trades M3 out of the box; set `EXEC_TF` in
+`mt5_live_bot.py` to `"M5"`/`"M15"` for a more spread-robust run. See
+`MT5_BOT_GUIDE.md`.
 
 ## Strategy (as implemented)
 

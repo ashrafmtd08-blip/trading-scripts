@@ -2,7 +2,8 @@
 
 This turns the strategy into an automated bot using **`mt5_live_bot.py`**, which
 drives your MetaTrader 5 terminal from Python and trades the *exact* logic that
-was backtested (`second_entry_m5_strategy.detect_signals`).
+was backtested (`second_entry_execution.detect_signals`). It **defaults to M3**,
+the most profitable timeframe in the corrected study.
 
 There are two ways to auto-trade on MT5. This guide covers the Python bridge
 because it reuses the validated Python code 1:1; the alternative (a native MQL5
@@ -20,7 +21,7 @@ MT5 terminal (logged in)  ──copy_rates──►  mt5_live_bot.py
 ```
 
 Every few seconds the bot:
-1. Pulls the last ~600 **closed** M5 candles per symbol.
+1. Pulls the last ~600 **closed** M3 candles per symbol (the default timeframe).
 2. Runs the H2/L2 detector on them.
 3. If the just-closed bar produced a fresh signal, places a **pending stop
    order** (buy-stop above H2 / sell-stop below L2) with SL at the FVG impulse
@@ -46,8 +47,9 @@ It only ever manages its own orders (tagged with `MAGIC = 250707`).
    ```bat
    pip install MetaTrader5 pandas numpy
    ```
-5. Put these three files in the same folder:
-   `mt5_live_bot.py`, `second_entry_m5_strategy.py`, `second_entry_backtest.py`.
+5. Put these files in the same folder:
+   `mt5_live_bot.py`, `second_entry_execution.py`, `second_entry_backtest.py`
+   (and `second_entry_m5_strategy.py` if you want the M5 shim).
 
 ---
 
@@ -58,6 +60,7 @@ Open `mt5_live_bot.py` and edit the block at the top:
 | Setting | Default | Meaning |
 |---|---|---|
 | `DRY_RUN` | `True` | **Logs orders but sends nothing.** Keep it on until you trust the log. |
+| `EXEC_TF` | `"M3"` | Execution timeframe. `"M5"`/`"M15"` for a slower, more spread-robust run. |
 | `SYMBOLS` | 7 majors | Match your broker's exact symbol names (some add suffixes like `EURUSD.a`). |
 | `RISK_PERCENT` | `1.0` | % of balance risked per trade. |
 | `BREAKEVEN_AT_R` | `1.0` | Move SL to entry at +1R. |
@@ -94,16 +97,17 @@ Stop with **Ctrl-C** (it shuts the MT5 connection down cleanly).
 - **Not yet run against a real terminal by its author.** You are validating it.
   Demo first, no exceptions.
 - **Costs.** The backtest modelled **no spread/slippage/commission**. Live, you
-  pay all three. On M5 the average stop is ~12 pips, so a 1-pip spread is ~8% of
-  risk per trade — it will lower the real edge.
+  pay all three. On M3 the average stop is ~11 pips, so a 1-pip spread is ~9% of
+  risk per trade — it will lower the real edge (this is why M3, despite the best
+  raw numbers, is the most cost-sensitive timeframe).
 - **Backtest now runs trades to resolution.** An earlier engine time-capped every
   trade at 12 bars and dropped the unresolved majority; that understated the edge
   (the 2R target is further than the 1R stop, so it takes longer to hit). The
   engine now holds each filled trade to its real SL/TP — matching what this bot
   does live — and the corrected study finds **M3 is the most profitable timeframe**
-  (M5 close behind). This bot ships on M5 as a cost-robust middle ground; to trade
-  M3 instead, switch `second_entry_m5_strategy` to a 3-minute resample. Either way,
-  validate on demo before trusting any expectancy number live.
+  (M5 close behind). This bot now **defaults to M3** (`EXEC_TF = "M3"`); set
+  `EXEC_TF = "M5"` or `"M15"` in the config for a slower, more spread-robust run.
+  Either way, validate on demo before trusting any expectancy number live.
 - **Broker digits.** The strategy assumes 5-digit (3-digit JPY) pricing. The bot
   warns if a symbol's digits differ; on a 4-digit broker the point-based buffers
   would be mis-scaled.

@@ -33,8 +33,10 @@ try:
 except ImportError:
     mt5 = None  # allows import on non-Windows for inspection; run() will refuse
 
-from second_entry_m5_strategy import detect_signals, OrderPlan
-from second_entry_backtest import INP_EXPIRY_BARS, INP_BUFFER_PTS
+from second_entry_execution import (
+    detect_signals, OrderPlan, EXEC_TIMEFRAME, TF_MINUTES,
+)
+from second_entry_backtest import INP_EXPIRY_BARS
 
 # --------------------------------------------------------------------------- #
 # Configuration — edit these
@@ -42,13 +44,16 @@ from second_entry_backtest import INP_EXPIRY_BARS, INP_BUFFER_PTS
 DRY_RUN          = True          # << set False only after demo-testing
 SYMBOLS          = ["EURUSD", "GBPUSD", "USDJPY", "USDCHF", "USDCAD",
                     "AUDUSD", "NZDUSD"]
-TIMEFRAME        = None          # set in run() to mt5.TIMEFRAME_M5
+EXEC_TF          = EXEC_TIMEFRAME  # "M3" by default (most profitable timeframe).
+                                   # Set "M5"/"M15" to trade a slower, more
+                                   # cost-robust timeframe.
+TIMEFRAME        = None           # resolved in run() to the mt5.TIMEFRAME_* constant
 RISK_PERCENT     = 1.0           # % of account balance risked per trade
 BREAKEVEN_AT_R   = 1.0           # move SL to entry once price is +1R
 MAX_SPREAD_PTS   = 25            # skip a signal if current spread exceeds this
 ONE_PER_SIDE     = True          # at most one order/position per symbol per side
 MAGIC            = 250707        # identifies this bot's orders
-BARS_TO_PULL     = 600           # closed M5 bars to feed the detector (warmup)
+BARS_TO_PULL     = 600           # closed bars to feed the detector (warmup)
 POLL_SECONDS     = 5             # how often to check for a new closed bar
 
 # Optional explicit login (usually not needed if the terminal is already
@@ -87,8 +92,8 @@ def connect() -> bool:
     return True
 
 
-def closed_m5_frame(symbol: str) -> pd.DataFrame | None:
-    """Recent CLOSED M5 bars as a Time/Open/High/Low/Close frame."""
+def closed_bars_frame(symbol: str) -> pd.DataFrame | None:
+    """Recent CLOSED bars (execution timeframe) as a Time/OHLC frame."""
     # position 0 is the still-forming bar; skip it -> start at 1
     rates = mt5.copy_rates_from_pos(symbol, TIMEFRAME, 1, BARS_TO_PULL)
     if rates is None or len(rates) < 60:
@@ -181,7 +186,7 @@ def place_pending(symbol: str, plan: OrderPlan) -> None:
         return
 
     otype = mt5.ORDER_TYPE_BUY_STOP if plan.side == "BUY" else mt5.ORDER_TYPE_SELL_STOP
-    expiry = int(time.time()) + INP_EXPIRY_BARS * 5 * 60  # 5-min bars
+    expiry = int(time.time()) + INP_EXPIRY_BARS * TF_MINUTES[EXEC_TF] * 60
     request = {
         "action": mt5.TRADE_ACTION_PENDING,
         "symbol": symbol,
@@ -247,21 +252,24 @@ def run() -> None:
     global TIMEFRAME
     if not connect():
         return
-    TIMEFRAME = mt5.TIMEFRAME_M5
+    tf_map = {"M1": mt5.TIMEFRAME_M1, "M3": mt5.TIMEFRAME_M3,
+              "M5": mt5.TIMEFRAME_M5, "M15": mt5.TIMEFRAME_M15,
+              "M30": mt5.TIMEFRAME_M30, "H1": mt5.TIMEFRAME_H1}
+    TIMEFRAME = tf_map[EXEC_TF]
     last_bar = {s: None for s in SYMBOLS}
-    log("Bot running on M5. Ctrl-C to stop.")
+    log(f"Bot running on {EXEC_TF}. Ctrl-C to stop.")
     try:
         while True:
             for sym in SYMBOLS:
                 manage_breakeven(sym)                 # every poll
-                df = closed_m5_frame(sym)
+                df = closed_bars_frame(sym)
                 if df is None or len(df) < 60:
                     continue
                 newest = df["Time"].iloc[-1]
                 if last_bar[sym] == newest:
                     continue                          # no new closed bar yet
                 last_bar[sym] = newest
-                sigs = detect_signals(df, sym)
+                sigs = detect_signals(df, sym, EXEC_TF)
                 if not sigs:
                     continue
                 # act only on a signal confirmed on the just-closed bar
