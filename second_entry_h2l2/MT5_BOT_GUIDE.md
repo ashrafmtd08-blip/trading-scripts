@@ -48,8 +48,42 @@ It only ever manages its own orders (tagged with `MAGIC = 250707`).
    pip install MetaTrader5 pandas numpy
    ```
 5. Put these files in the same folder:
-   `mt5_live_bot.py`, `second_entry_execution.py`, `second_entry_backtest.py`
-   (and `second_entry_m5_strategy.py` if you want the M5 shim).
+   `mt5_live_bot.py`, `second_entry_execution.py`, `second_entry_backtest.py`,
+   `mt5_connect_test.py` (and `second_entry_m5_strategy.py` if you want the M5 shim).
+
+---
+
+## How the link actually works
+
+The `MetaTrader5` package does **not** log into your broker over the internet. It
+attaches to the **MT5 desktop terminal running on the same machine** and drives
+it. So the chain is:
+
+```
+your Python script  ──►  MT5 terminal (terminal64.exe, logged in)  ──►  broker
+```
+
+Consequences:
+- The terminal must be **installed, running, and logged in** while the bot runs.
+- Python and the terminal must both be **64-bit**.
+- `mt5.initialize()` with no arguments attaches to the **currently running,
+  logged-in terminal**. Pass `login/password/server/path` only if you want Python
+  to launch a specific terminal or switch accounts itself.
+
+## Verify the link (do this first)
+
+Before the bot, run the connection tester — it trades nothing, just proves the
+link and flags misconfiguration:
+
+```bat
+python mt5_connect_test.py EURUSD
+```
+
+A healthy result prints your **account (login, server, DEMO)**, **balance**,
+`algo_trading_allowed=True`, and a live **bid/ask** for EURUSD, ending with
+"Link looks good". If it fails, the script names the fix (terminal not running,
+64-bit mismatch, algo trading off, or a broker symbol suffix like `EURUSD.a`).
+Only run the bot once this passes.
 
 ---
 
