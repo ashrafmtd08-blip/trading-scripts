@@ -54,12 +54,26 @@ START_DATE = "2010-01-01"      # backtest window start (data runs to 2026-02)
 
 
 def point_size(symbol: str) -> float:
-    """MT5-style point: last decimal digit. JPY pairs quote to 3 dp, else 5 dp."""
-    return 0.001 if symbol.endswith("JPY") else 0.00001
+    """MT5-style point per instrument. FX 5-dp; JPY 3-dp; Gold 2-dp ($0.01);
+    BTC uses a $1 point so the point-based EMA-touch/buffer stay a sane fraction
+    of price (300 pts = $300 touch on ~$40k BTC, matching the Gold-M5 intent)."""
+    if symbol.endswith("JPY"):
+        return 0.001
+    if symbol == "XAUUSD":
+        return 0.01
+    if symbol.startswith("BTC"):
+        return 1.0
+    return 0.00001
 
 
 def pip_size(symbol: str) -> float:
-    return 0.01 if symbol.endswith("JPY") else 0.0001
+    if symbol.endswith("JPY"):
+        return 0.01
+    if symbol == "XAUUSD":
+        return 0.1
+    if symbol.startswith("BTC"):
+        return 1.0
+    return 0.0001
 
 
 # --------------------------------------------------------------------------- #

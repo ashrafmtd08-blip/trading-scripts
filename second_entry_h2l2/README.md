@@ -68,6 +68,22 @@ commission is modelled** — matching the indicator's on-chart methodology.
 Every pair posted positive expectancy (GBPUSD best at +0.53R, USDCAD weakest at
 +0.26R). Full per-pair table and the equity curve are in the HTML report.
 
+### Gold &amp; Bitcoin (`xau_btc_backtest.py`)
+
+The strategy was born on Gold M5, so it's also tested on XAUUSD and BTCUSD
+(bundled M5 data, ~2023-08→2024-04):
+
+| Symbol | TF | Trades | Win% | Expectancy | Total R | PF |
+|---|---|---|---|---|---|---|
+| XAUUSD | M5 | 299 | 48.8% | +0.46R | +132R | 1.90 |
+| BTCUSD | M5 | 253 | 54.7% | +0.64R | +157R | 2.41 |
+
+**M3** for these two needs 1-minute data, which isn't freely available for
+Gold/BTC. Export M1 from your own MT5 with `export_m1.py` (writes
+`data/xau_btc/<SYM>_M1.csv`); `xau_btc_backtest.py` then builds **M3 and M5**
+from it automatically. Gold/BTC point sizes are handled in `point_size()`
+(Gold $0.01, BTC $1).
+
 > **Methodology note:** trades are held to their real SL/TP (a pending order
 > expires only if unfilled within 12 bars). An earlier version time-capped every
 > trade at 12 bars, which systematically discarded winners-in-progress (the 2R
