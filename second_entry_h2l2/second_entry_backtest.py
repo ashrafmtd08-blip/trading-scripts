@@ -47,7 +47,8 @@ INP_CLOSE_POS_RATIO = 0.50     # close must sit in upper/lower half of the range
 INP_EMA_TOUCH_PTS   = 300      # pullback must come within this many points of EMA
 INP_BUFFER_PTS      = 20       # entry/SL buffer, in points
 INP_RR              = 2.0      # reward:risk (fixed TP)
-INP_EXPIRY_BARS     = 12       # pending buy/sell-stop auto-cancels after N bars
+INP_EXPIRY_BARS     = 12       # pending buy/sell-stop auto-cancels if not FILLED in N bars
+INP_MAX_HOLD_BARS   = 0        # once filled, hold to SL/TP; 0 = until end of data (no time stop)
 
 START_DATE = "2010-01-01"      # backtest window start (data runs to 2026-02)
 
@@ -200,30 +201,33 @@ def backtest(df: pd.DataFrame, symbol: str,
         return None
 
     def replay(entry: float, sl: float, tp: float, start: int, bull: bool):
-        """Forward-replay a pending stop order. Returns ('win'|'loss'|'cancel', R)."""
-        filled = False
+        """Forward-replay a pending stop order. Two decoupled horizons:
+        the order must FILL within INP_EXPIRY_BARS bars (else 'cancel'); once
+        filled it is held to SL or TP with no time stop (bounded only by the end
+        of data, or INP_MAX_HOLD_BARS if > 0). Returns ('win'|'loss'|'cancel'
+        |'open', R)."""
+        # phase 1 — wait for the stop to trigger within the expiry window
+        fill_k = None
         for k in range(start, min(start + INP_EXPIRY_BARS + 1, n)):
-            if not filled:
-                # buy-stop triggers when high >= entry (sell-stop: low <= entry)
-                if (bull and h[k] >= entry) or (not bull and l[k] <= entry):
-                    filled = True
-                    # same bar can also resolve; fall through to resolution check
-                else:
-                    continue
-            # resolution: assume SL-first if both touched in one bar (conservative)
+            if (bull and h[k] >= entry) or (not bull and l[k] <= entry):
+                fill_k = k
+                break
+        if fill_k is None:
+            return "cancel", 0.0
+        # phase 2 — hold the filled trade until SL or TP (SL-first on ties)
+        end = n if INP_MAX_HOLD_BARS <= 0 else min(n, fill_k + INP_MAX_HOLD_BARS + 1)
+        for k in range(fill_k, end):
             if bull:
                 hit_sl = l[k] <= sl
                 hit_tp = h[k] >= tp
             else:
                 hit_sl = h[k] >= sl
                 hit_tp = l[k] <= tp
-            if hit_sl and hit_tp:
-                return "loss", -1.0
-            if hit_sl:
+            if hit_sl:            # SL-first if both touched in one bar (conservative)
                 return "loss", -1.0
             if hit_tp:
                 return "win", rr
-        return ("cancel", 0.0) if not filled else ("open", 0.0)
+        return "open", 0.0        # unresolved only at the very end of the data
 
     def scan(bull: bool):
         i = warmup

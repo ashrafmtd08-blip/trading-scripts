@@ -1,11 +1,16 @@
 """
 Second Entry (H2/L2) — M5 execution strategy.
 
-M5 was the most profitable execution timeframe in the timeframe study
-(highest total R across the seven majors, 2015-2025), so this module packages
-the strategy for M5 execution: given a stream of closed M5 candles it emits the
-order plan (side, entry, stop, target) for each valid H2/L2 signal, and can
-flag whether the most recently closed bar just produced one.
+This module packages the strategy for M5 execution: given a stream of closed M5
+candles it emits the order plan (side, entry, stop, target) for each valid
+H2/L2 signal, and can flag whether the most recently closed bar just produced
+one.
+
+Timeframe note: the corrected timeframe study (trades held to real SL/TP) found
+M3 leads on the raw edge, with M5 close behind. M5 is kept here as a practical
+middle ground — wider stops than M3 (~12 vs ~11 pips) make it less sensitive to
+spread. To run this on M3 instead, change TIMEFRAME to "M3" and build_m5()'s
+resample rule to "3min" (or generalise the resample rule).
 
 It is execution-facing (signal generation), not a backtest — but it reuses the
 exact same detection rules and indicators as second_entry_backtest.py, so the

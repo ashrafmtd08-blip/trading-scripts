@@ -8,7 +8,9 @@ everything for this study lives in this folder; run all commands from here
 Two studies are included:
 - **H4 majors**, 2010→2026 (`second_entry_report.html`).
 - **Intraday timeframe comparison** M3 vs M5 vs M15, 2015→2025
-  (`second_entry_timeframe_report.html`) — M5 most profitable by total R.
+  (`second_entry_timeframe_report.html`) — M3 most profitable on the raw edge
+  (highest total R *and* expectancy), though it has the tightest stops so is the
+  most cost-sensitive.
 
 ### Layout
 ```
@@ -47,15 +49,21 @@ commission is modelled** — matching the indicator's on-chart methodology.
 
 | Metric | Value |
 |---|---|
-| Tradeable signals | 837 (768 resolved, 69 cancelled) |
-| Win rate @ 2R | **46.9%** (break-even 33.3%) |
-| Expectancy | **+0.41R / trade** |
-| Total return | **+312R** |
-| Profit factor | 1.76 |
-| Max drawdown | −9R |
+| Tradeable signals | 1,265 (1,196 resolved, 69 cancelled) |
+| Win rate @ 2R | **45.8%** (break-even 33.3%) |
+| Expectancy | **+0.37R / trade** |
+| Total return | **+448R** |
+| Profit factor | 1.69 |
+| Max drawdown | −17R |
 
-Every pair posted positive expectancy (GBPUSD best at +0.64R, USDCAD weakest at
-+0.18R). Full per-pair table and the equity curve are in the HTML report.
+Every pair posted positive expectancy (GBPUSD best at +0.53R, USDCAD weakest at
++0.26R). Full per-pair table and the equity curve are in the HTML report.
+
+> **Methodology note:** trades are held to their real SL/TP (a pending order
+> expires only if unfilled within 12 bars). An earlier version time-capped every
+> trade at 12 bars, which systematically discarded winners-in-progress (the 2R
+> target is further than the 1R stop, so it takes longer to reach) and understated
+> the edge. These numbers use the corrected run-to-resolution engine.
 
 ## Files
 

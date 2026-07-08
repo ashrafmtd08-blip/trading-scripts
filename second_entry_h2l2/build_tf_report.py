@@ -111,10 +111,10 @@ html = f"""<title>Second Entry (H2/L2) — M3 vs M5 vs M15</title>
   .chip {{ font-family:var(--mono); font-size:12.5px; color:var(--ink-2); background:var(--surface-2); border:1px solid var(--line); border-radius:999px; padding:5px 12px; }}
   .chip b {{ color:var(--ink); font-weight:600; }}
 
-  .verdict {{ background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--m5); border-radius:12px; padding:18px 20px; margin:0 0 32px; box-shadow:var(--shadow); }}
-  .verdict .tag {{ font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--m5); }}
+  .verdict {{ background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--m3); border-radius:12px; padding:18px 20px; margin:0 0 32px; box-shadow:var(--shadow); }}
+  .verdict .tag {{ font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--m3); }}
   .verdict p {{ margin:8px 0 0; font-size:16px; }}
-  .verdict b.m5 {{ color:var(--m5); }} .verdict b.m15 {{ color:var(--m15); }} .verdict b.pos {{ color:var(--pos); }}
+  .verdict b.m3 {{ color:var(--m3); }} .verdict b.m5 {{ color:var(--m5); }} .verdict b.m15 {{ color:var(--m15); }} .verdict b.pos {{ color:var(--pos); }}
 
   section {{ margin-bottom:42px; }}
   h2 {{ font-family:var(--serif); font-weight:600; font-size:22px; letter-spacing:-.01em; margin:0 0 4px; }}
@@ -188,16 +188,18 @@ html = f"""<title>Second Entry (H2/L2) — M3 vs M5 vs M15</title>
 
   <div class="verdict">
     <span class="tag">Verdict</span>
-    <p><b class="m5">M5 is the most profitable</b> by total accumulated return
-    (<b class="pos">{tfs['M5']['total_r']:+.0f}R</b>), just ahead of M3
-    ({tfs['M3']['total_r']:+.0f}R) on ~10% fewer trades — so it earns the same money
-    with less exposure. <b class="m15">M15 has the best per-trade quality</b>
-    ({tfs['M15']['expectancy']:+.2f}R, {tfs['M15']['win_rate']:.1f}% win, PF
-    {tfs['M15']['profit_factor']:.2f}) but trades less, so it accumulates less.
-    All three clear the {meta['breakeven_win_rate']:.1f}% break-even floor comfortably.
-    Costs are not modelled — and since lower timeframes trade more often for smaller
-    stops, spread would erode M3 hardest, tilting the practical choice toward
-    <b class="m5">M5</b>.</p>
+    <p><b class="m3">M3 is the most profitable</b> on the raw edge — it leads on
+    both total return (<b class="pos">{tfs['M3']['total_r']:+.0f}R</b>) and per-trade
+    expectancy ({tfs['M3']['expectancy']:+.2f}R, {tfs['M3']['win_rate']:.1f}% win, PF
+    {tfs['M3']['profit_factor']:.2f}), and tops total R for all seven majors. More
+    candles means more signals ({tfs['M3']['trades']:,} trades) without giving up
+    quality. <b>The catch is cost:</b> M3's stops are the tightest (~11 pips), so
+    spread and slippage bite hardest there. Costs are not modelled, so treat M3's
+    lead as an upper bound — under realistic spread the gap to <b class="m5">M5</b>
+    ({tfs['M5']['expectancy']:+.2f}R) narrows, and <b class="m15">M15</b>
+    ({tfs['M15']['expectancy']:+.2f}R, widest ~18-pip stops) is the least
+    cost-sensitive. All three clear the {meta['breakeven_win_rate']:.1f}% break-even
+    floor with room to spare.</p>
   </div>
 
   <section>
@@ -210,17 +212,17 @@ html = f"""<title>Second Entry (H2/L2) — M3 vs M5 vs M15</title>
   <section>
     <h2>Total return by timeframe</h2>
     <p class="lede">Sum of R over the full 2015–2025 window, all pairs combined.
-    M3 and M5 finish neck-and-neck; M15 trails on volume.</p>
+    Total R climbs as the timeframe shortens — more signals at a comparable edge.</p>
     <div class="card">{bars}
-      <p class="cap">1R = one risk unit. M5 reaches the top with {tfs['M5']['trades']:,} trades vs M3's {tfs['M3']['trades']:,}.</p>
+      <p class="cap">1R = one risk unit. M3 leads with {tfs['M3']['trades']:,} trades vs M5's {tfs['M5']['trades']:,} and M15's {tfs['M15']['trades']:,}.</p>
     </div>
   </section>
 
   <section>
     <h2>Per-pair × timeframe</h2>
     <p class="lede">Cell shading = expectancy (R/trade); small line = total R · win rate.
-    ★ = the best timeframe for that pair by total R. No single timeframe wins
-    everywhere — GBPUSD and USDJPY love M3, while AUD/NZD/CAD prefer M15.</p>
+    ★ = the best timeframe for that pair by total R. M3 wins total R on every one of
+    the seven majors, and the highest per-trade edge on six of seven.</p>
     <div class="heat-scroll">
       <table class="heat">
         <thead><tr><th style="text-align:left">Pair</th>
@@ -235,9 +237,9 @@ html = f"""<title>Second Entry (H2/L2) — M3 vs M5 vs M15</title>
     <h2>Method &amp; caveats</h2>
     <div class="method">
       <div class="item"><h3>One source, three views</h3><p>M3/M5/M15 are resampled from the same M1 (1-minute) OHLCV feed per pair, so differences are purely the timeframe — not different data.</p></div>
-      <div class="item"><h3>Identical engine</h3><p>Same EMA(20)/H1-H2/FVG/ADX rules, same 2R target, same 12-bar pending expiry, same forward-replay win/loss (SL-first on ties) as the H4 report.</p></div>
-      <div class="item"><h3>No costs modelled</h3><p>Spread, slippage and commission are excluded. This is deliberate — it isolates the timeframe effect on the raw edge, but flatters lower timeframes most.</p></div>
-      <div class="item"><h3>Why M5 over M3</h3><p>Near-identical gross R, fewer trades, larger stops in price terms → a better cost-adjusted profile once real spread is added.</p></div>
+      <div class="item"><h3>Identical engine</h3><p>Same EMA(20)/H1-H2/FVG/ADX rules, same 2R target, same forward-replay win/loss (SL-first on ties) as the H4 report. A pending order expires if unfilled in 12 bars; once filled it is held to its real SL or TP (no time stop).</p></div>
+      <div class="item"><h3>No costs modelled</h3><p>Spread, slippage and commission are excluded. This is deliberate — it isolates the timeframe effect on the raw edge, but flatters lower timeframes most, so M3's headline lead is the most cost-sensitive.</p></div>
+      <div class="item"><h3>The cost trade-off</h3><p>M3 wins the raw edge but risks ~11-pip stops; M15's ~18-pip stops make it the most robust to spread. The right pick depends on your broker's real intraday costs.</p></div>
       <div class="item"><h3>Data</h3><p>Seven majors (EUR/GBP/JPY/CHF/CAD/AUD/NZD vs USD), Jan 2015–Dec 2025, ~4.0M M1 bars each, from a public parquet dataset.</p></div>
       <div class="item"><h3>Point inputs</h3><p>EMA-touch 300 pts and 20-pt buffers are mapped per symbol (JPY = 3-dp). These intraday scales suit M3–M15, unlike the H4 study.</p></div>
     </div>

@@ -12,7 +12,8 @@
     "ema_touch_points": 300,
     "buffer_points": 20,
     "reward_risk": 2.0,
-    "pending_expiry_bars": 12
+    "pending_expiry_bars": 12,
+    "max_hold_bars": 0
   },
   "rules": {
     "trend": "close > EMA(20) = bull regime, close < EMA(20) = bear regime",
@@ -32,7 +33,7 @@
     "jpy_pairs": 0.001,
     "other": 1e-05
   },
-  "methodology": "forward-replay vs real bar highs/lows; SL-first on ties; NO spread/slippage/commission modelled",
+  "methodology": "forward-replay vs real bar highs/lows; SL-first on ties; pending order expires if unfilled in 12 bars, then held to real SL/TP with no time stop; NO spread/slippage/commission modelled",
   "results": {
     "h4_majors_2010_2026": {
       "pairs": [
@@ -43,11 +44,11 @@
         "USDCAD",
         "AUDUSD"
       ],
-      "trades": 837,
-      "win_rate_pct": 46.9,
-      "expectancy_R": 0.406,
-      "total_R": 312.0,
-      "profit_factor": 1.76
+      "trades": 1265,
+      "win_rate_pct": 45.8,
+      "expectancy_R": 0.375,
+      "total_R": 448.0,
+      "profit_factor": 1.69
     },
     "intraday_timeframe_study_2015_2025": {
       "pairs": [
@@ -61,34 +62,35 @@
       ],
       "by_timeframe": {
         "M3": {
-          "trades": 7174,
-          "win_rate_pct": 47.4,
-          "expectancy_R": 0.421,
-          "total_R": 2133.0,
-          "profit_factor": 1.8,
+          "trades": 16620,
+          "win_rate_pct": 55.8,
+          "expectancy_R": 0.673,
+          "total_R": 9769.0,
+          "profit_factor": 2.52,
           "avg_stop_pips": 10.9
         },
         "M5": {
-          "trades": 6429,
-          "win_rate_pct": 47.2,
-          "expectancy_R": 0.417,
-          "total_R": 2160.0,
-          "profit_factor": 1.79,
+          "trades": 13808,
+          "win_rate_pct": 54.0,
+          "expectancy_R": 0.62,
+          "total_R": 7795.0,
+          "profit_factor": 2.35,
           "avg_stop_pips": 12.5
         },
         "M15": {
-          "trades": 4563,
-          "win_rate_pct": 48.2,
-          "expectancy_R": 0.445,
-          "total_R": 1796.0,
-          "profit_factor": 1.86,
+          "trades": 8307,
+          "win_rate_pct": 51.5,
+          "expectancy_R": 0.546,
+          "total_R": 4247.0,
+          "profit_factor": 2.13,
           "avg_stop_pips": 17.7
         }
       },
-      "most_profitable_total_R": "M5",
-      "best_per_trade_edge": "M15"
+      "most_profitable_total_R": "M3",
+      "best_per_trade_edge": "M3",
+      "note": "M3 leads on raw edge (both total R and expectancy) but has the tightest stops (~11 pips) so is the most cost-sensitive; M15 is the most robust to spread. Choose per your broker's real intraday costs."
     }
   },
   "breakeven_win_rate_pct": 33.3,
-  "status": "PROVISIONAL \u2014 positive expectancy on historical mid-price data across all pairs and timeframes; NOT yet validated with transaction costs or out-of-sample. Not confirmed as a tradeable edge."
+  "status": "PROVISIONAL \u2014 positive expectancy on historical mid-price data across all pairs and timeframes, now measured with trades held to real SL/TP (no artificial time-out). Still NOT validated with transaction costs or out-of-sample. Not confirmed as a tradeable edge."
 }

@@ -96,13 +96,14 @@ Stop with **Ctrl-C** (it shuts the MT5 connection down cleanly).
 - **Costs.** The backtest modelled **no spread/slippage/commission**. Live, you
   pay all three. On M5 the average stop is ~12 pips, so a 1-pip spread is ~8% of
   risk per trade — it will lower the real edge.
-- **The backtest horizon quirk we discussed.** The backtester only counted
-  trades that resolved within 12 bars and dropped the rest (~54% of M5 signals).
-  **Live, the bot lets trades run to their real SL/TP** (only the *unfilled*
-  pending order expires after 12 bars), which is correct — but it means live
-  results will *not* match those truncated backtest stats. Re-running the
-  backtest with a proper resolution horizon is the right thing to do before
-  trusting any expectancy number.
+- **Backtest now runs trades to resolution.** An earlier engine time-capped every
+  trade at 12 bars and dropped the unresolved majority; that understated the edge
+  (the 2R target is further than the 1R stop, so it takes longer to hit). The
+  engine now holds each filled trade to its real SL/TP — matching what this bot
+  does live — and the corrected study finds **M3 is the most profitable timeframe**
+  (M5 close behind). This bot ships on M5 as a cost-robust middle ground; to trade
+  M3 instead, switch `second_entry_m5_strategy` to a 3-minute resample. Either way,
+  validate on demo before trusting any expectancy number live.
 - **Broker digits.** The strategy assumes 5-digit (3-digit JPY) pricing. The bot
   warns if a symbol's digits differ; on a 4-digit broker the point-based buffers
   would be mis-scaled.
