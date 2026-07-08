@@ -1,0 +1,236 @@
+<title>Run the Bot 24/7 from a Mac — Step by Step</title>
+<style>
+  :root{
+    --bg:#f4f5f2;--surface:#fbfbf9;--surface-2:#eef0ea;--ink:#181d1c;--ink-2:#4b5350;
+    --ink-3:#828c88;--line:#dcded7;--gold:#b8892e;--pos:#1f8f6f;--neg:#c0523a;--info:#3f7bb0;
+    --shadow:0 1px 2px rgba(20,28,26,.05),0 8px 26px rgba(20,28,26,.06);
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0e1413;--surface:#141b1a;--surface-2:#1b2322;--ink:#e9ede9;--ink-2:#a7b0ac;
+    --ink-3:#6d7773;--line:#26302e;--gold:#d3ac5a;--pos:#43b892;--neg:#dd6b50;--info:#63a2d8;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 34px rgba(0,0,0,.4);}}
+  :root[data-theme="light"]{--bg:#f4f5f2;--surface:#fbfbf9;--surface-2:#eef0ea;--ink:#181d1c;
+    --ink-2:#4b5350;--ink-3:#828c88;--line:#dcded7;--gold:#b8892e;--pos:#1f8f6f;--neg:#c0523a;--info:#3f7bb0;
+    --shadow:0 1px 2px rgba(20,28,26,.05),0 8px 26px rgba(20,28,26,.06);}
+  :root[data-theme="dark"]{--bg:#0e1413;--surface:#141b1a;--surface-2:#1b2322;--ink:#e9ede9;
+    --ink-2:#a7b0ac;--ink-3:#6d7773;--line:#26302e;--gold:#d3ac5a;--pos:#43b892;--neg:#dd6b50;--info:#63a2d8;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 34px rgba(0,0,0,.4);}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:820px;margin:0 auto;padding:clamp(20px,4vw,52px) clamp(16px,4vw,36px) 90px;}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:0 0 12px;}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(29px,5vw,44px);line-height:1.05;margin:0 0 14px;text-wrap:balance;}
+  .sub{color:var(--ink-2);font-size:17px;max-width:60ch;margin:0 0 22px;}
+
+  .why{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:12px;padding:18px 20px;margin:0 0 14px;box-shadow:var(--shadow);}
+  .why h3{margin:0 0 6px;font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);}
+  .why p{margin:0;font-size:15.5px;}
+  .flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:var(--mono);font-size:13px;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:0 0 34px;}
+  .flow b{color:var(--ink);}
+  .flow .ar{color:var(--gold);}
+
+  .phase{position:relative;padding-left:56px;margin-bottom:14px;}
+  .phase:not(:last-of-type)::before{content:"";position:absolute;left:19px;top:40px;bottom:-14px;width:2px;background:var(--line);}
+  .num{position:absolute;left:0;top:0;width:40px;height:40px;border-radius:50%;background:var(--gold);color:#fff;font-family:var(--mono);font-weight:600;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
+  @media (prefers-color-scheme:dark){.num{color:#1a1205;}}
+  :root[data-theme="dark"] .num{color:#1a1205;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);}
+  .phase h2{font-family:var(--serif);font-weight:600;font-size:20px;margin:6px 0 10px;}
+  .phase .lead{color:var(--ink-2);font-size:14px;margin:0 0 12px;}
+  ol.steps,ul.steps{margin:0;padding-left:20px;}
+  .steps li{margin:7px 0;font-size:14.5px;}
+  code{font-family:var(--mono);font-size:.88em;background:var(--surface-2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+  pre{font-family:var(--mono);font-size:13px;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:12px 14px;overflow-x:auto;margin:10px 0;}
+  .tag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;margin-bottom:8px;}
+  .tag.demo{background:color-mix(in srgb,var(--pos) 16%,transparent);color:var(--pos);}
+  .tag.live{background:color-mix(in srgb,var(--neg) 16%,transparent);color:var(--neg);}
+  .tag.always{background:color-mix(in srgb,var(--info) 18%,transparent);color:var(--info);}
+  .note{font-size:13px;color:var(--ink-2);background:var(--surface-2);border-radius:8px;padding:10px 13px;margin-top:12px;border:1px solid var(--line);}
+  .note b{color:var(--ink);}
+
+  .box{border-radius:14px;padding:18px 22px;margin:30px 0 0;border:1px solid var(--line);}
+  .box.cost{background:var(--surface);box-shadow:var(--shadow);}
+  .box.warn{background:color-mix(in srgb,var(--neg) 7%,var(--surface));border-color:color-mix(in srgb,var(--neg) 30%,var(--line));}
+  .box h3{font-family:var(--serif);font-size:18px;margin:0 0 10px;}
+  .box.warn h3{color:var(--neg);}
+  .box ul{margin:0;padding-left:20px;}
+  .box li{margin:6px 0;font-size:14px;color:var(--ink-2);}
+  .box li b{color:var(--ink);}
+  footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);font-family:var(--mono);font-size:12px;color:var(--ink-3);}
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Deployment Guide · MacBook → Always-On</p>
+  <h1>Run the Second Entry bot 24/7 — from a Mac</h1>
+  <p class="sub">A plain-language walkthrough: get the bot trading on MetaTrader 5,
+  paper-trade it on a demo account, then go live — and keep it running even when
+  your MacBook is closed or off.</p>
+
+  <div class="why">
+    <h3>The one thing to understand first</h3>
+    <p>The bot <b>cannot run on your Mac</b> — MetaTrader 5's Python link is
+    Windows-only — and a laptop that's off can't trade. Both problems have the
+    same fix: rent a tiny <b>Windows computer in the cloud (a "VPS")</b> that's
+    always on. You set it up once from your Mac, then it runs by itself.</p>
+  </div>
+  <div class="flow">
+    <b>Your Mac</b> <span class="ar">→ remote-controls →</span>
+    <b>Windows VPS (always on)</b> <span class="ar">→ runs →</span>
+    <b>MT5 + bot</b> <span class="ar">→ trades with →</span> <b>your broker</b>
+  </div>
+
+  <div class="phase">
+    <div class="num">1</div>
+    <div class="card">
+      <h2>Get the two accounts you need</h2>
+      <ul class="steps">
+        <li><b>A broker MT5 demo account.</b> Sign up with any MT5 broker and open a
+          <b>demo</b> account — you'll get a login number, password, and server name.
+          (Demo = fake money = paper trading.)</li>
+        <li><b>A Windows VPS.</b> Either your broker's VPS (many offer one free if you
+          fund the account), or a general provider — <b>Amazon Lightsail</b>,
+          <b>Vultr</b>, or <b>Contabo</b> all rent a Windows VPS for roughly
+          <b>$5–20/month</b>. Choose a <b>Windows</b> plan near your broker's servers.</li>
+      </ul>
+      <div class="note"><b>Why not MT5's own free "VPS"?</b> That built-in VPS only runs
+      MQL5 Expert Advisors, <i>not</i> external Python programs. For this Python bot you
+      need a real Windows VPS. (If you'd rather use MT5's built-in VPS, that means
+      porting to a native MQL5 EA — ask and I'll help.)</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="num">2</div>
+    <div class="card">
+      <h2>Connect to the VPS from your Mac</h2>
+      <ul class="steps">
+        <li>Install <b>Windows App</b> (formerly "Microsoft Remote Desktop") from the
+          Mac App Store — it's free.</li>
+        <li>Add a PC using the VPS's <b>IP address, username, and password</b> (your VPS
+          provider emails these).</li>
+        <li>Double-click it — a <b>Windows desktop opens in a window on your Mac</b>.
+          Everything from here happens inside that window.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="num">3</div>
+    <div class="card">
+      <h2>Set up MetaTrader 5 on the VPS</h2>
+      <ul class="steps">
+        <li>Inside the Windows window: download and install <b>MetaTrader 5</b> from your
+          broker.</li>
+        <li>Log in with your <b>demo</b> account (login, password, server).</li>
+        <li>Turn on automation: <b>Tools → Options → Expert Advisors → ✓ Allow
+          algorithmic trading</b>, then click the <b>"Algo Trading"</b> toolbar button so
+          it's <b>green</b>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="num">4</div>
+    <div class="card">
+      <h2>Install the bot on the VPS</h2>
+      <ul class="steps">
+        <li>Install <b>Python 3.11 (64-bit)</b> from python.org — tick <b>"Add Python to
+          PATH"</b> during setup.</li>
+        <li>Download the bot: get the <code>Second-entries</code> project (Download ZIP
+          from GitHub, or install Git and clone it).</li>
+        <li>Open <b>Command Prompt</b>, go to the folder, and install the requirements:
+          <pre>cd path\to\Second-entries
+pip install -r requirements.txt</pre></li>
+        <li>Prove the link works (this trades nothing):
+          <pre>python mt5_connect_test.py EURUSD</pre>
+          You should see your demo account and <b>"Link looks good."</b></li>
+      </ul>
+      <div class="note">Prefer clicking to typing? Open the folder in <b>VS Code</b>, press
+      <b>F5</b>, and pick <b>"1 · MT5: Connection test"</b> — the project ships with the
+      run buttons already set up.</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="num">5</div>
+    <div class="card">
+      <span class="tag demo">Paper trading</span>
+      <h2>Paper-trade on the demo account</h2>
+      <p class="lead">Two safe stages before any real order is sent.</p>
+      <ol class="steps">
+        <li><b>Watch-only (a few days).</b> The bot ships with <code>DRY_RUN = True</code>
+          — run <code>python mt5_live_bot.py</code> and it <i>logs</i> the trades it would
+          make without placing them. Confirm the signals look sane.</li>
+        <li><b>Real demo orders (2–4 weeks).</b> Set <code>DRY_RUN = False</code> in
+          <code>mt5_live_bot.py</code> and run it again. Now it places actual orders on
+          your <b>demo</b> account — real paper trading, real fills, zero real money.</li>
+      </ol>
+      <div class="note">This is where you find out how it really behaves — spread,
+      fills, and timing that a backtest can't show. Let it run for weeks.</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="num">6</div>
+    <div class="card">
+      <span class="tag always">Always on</span>
+      <h2>Keep it running when your Mac is off</h2>
+      <p class="lead">This is the whole point of the VPS — it's a separate computer that
+      never sleeps.</p>
+      <ul class="steps">
+        <li>When you're done checking in, <b>just close the Remote Desktop window</b> (or
+          quit Windows App). Choose <b>Disconnect</b>, <b>not "Sign out"</b> — disconnect
+          leaves MT5 and the bot running; signing out stops them.</li>
+        <li>Your Mac can now be <b>shut, closed, or offline</b> — the VPS keeps trading.</li>
+        <li><b>Survive VPS reboots:</b> put a shortcut to the bot in Windows'
+          <code>Startup</code> folder (press <code>Win+R</code>, type
+          <code>shell:startup</code>, drop a shortcut there) and set MT5 to launch on
+          login, so everything restarts by itself after any reboot.</li>
+        <li>Reconnect anytime from your Mac to check the log or equity.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="num">7</div>
+    <div class="card">
+      <span class="tag live">Live money</span>
+      <h2>Go live — only after demo proves out</h2>
+      <ul class="steps">
+        <li>In MT5, log in to your <b>live</b> account instead of the demo.</li>
+        <li>Start <b>tiny</b>: the bot risks 1% per trade — consider lowering
+          <code>RISK_PERCENT</code> to 0.25–0.5% at first, and trade one or two pairs.</li>
+        <li>Watch it daily for the first weeks. Scale up only if live behaviour matches
+          what you saw on demo.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="box cost">
+    <h3>What it costs</h3>
+    <ul>
+      <li><b>VPS:</b> ~$5–20/month (or free from some brokers with a funded account).</li>
+      <li><b>MT5, Python, the bot:</b> free.</li>
+      <li><b>Remote Desktop app on Mac:</b> free.</li>
+    </ul>
+  </div>
+
+  <div class="box warn">
+    <h3>Before you risk real money — the honest part</h3>
+    <ul>
+      <li><b>The results so far ignore real trading costs.</b> Spread and slippage will
+        lower the edge, most on the fast M3 timeframe. Demo is how you measure the
+        real number.</li>
+      <li><b>Not battle-tested.</b> This bot hasn't run on a live terminal yet — you are
+        the first real test. Weeks on demo, then tiny live size.</li>
+      <li><b>Keep the demo running alongside live</b> for a while to compare.</li>
+      <li><b>Never risk money you can't afford to lose.</b> Automated trading can lose
+        steadily as well as win.</li>
+    </ul>
+  </div>
+
+  <footer>Second Entry (H2/L2) · Mac → Windows VPS deployment · demo first, always.</footer>
+</div>
