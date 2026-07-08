@@ -8,4 +8,7 @@ __pycache__/
 # Transient build/delivery artifacts (screenshots, packaged tarballs)
 report_*.png
 tf_*.png
+paper_*.png
+*_light.png
+*_dark.png
 *.tar.gz
