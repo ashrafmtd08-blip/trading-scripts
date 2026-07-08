@@ -1,0 +1,56 @@
+{
+  "meta": {
+    "rr": 2.0,
+    "breakeven": 33.3
+  },
+  "instruments": {
+    "XAUUSD": {
+      "M5": {
+        "bars": 50000,
+        "trades": 299,
+        "wins": 139,
+        "losses": 146,
+        "win_rate": 48.8,
+        "expectancy": 0.463,
+        "total_r": 132.0,
+        "profit_factor": 1.9,
+        "window": "2023-08-04\u21922024-04-19"
+      },
+      "M15": {
+        "bars": 16741,
+        "trades": 112,
+        "wins": 48,
+        "losses": 60,
+        "win_rate": 44.4,
+        "expectancy": 0.333,
+        "total_r": 36.0,
+        "profit_factor": 1.6,
+        "window": "2023-08-04\u21922024-04-19"
+      }
+    },
+    "BTCUSD": {
+      "M5": {
+        "bars": 50000,
+        "trades": 253,
+        "wins": 134,
+        "losses": 111,
+        "win_rate": 54.7,
+        "expectancy": 0.641,
+        "total_r": 157.0,
+        "profit_factor": 2.41,
+        "window": "2023-10-20\u21922024-04-11"
+      },
+      "M15": {
+        "bars": 16667,
+        "trades": 104,
+        "wins": 56,
+        "losses": 44,
+        "win_rate": 56.0,
+        "expectancy": 0.68,
+        "total_r": 68.0,
+        "profit_factor": 2.55,
+        "window": "2023-10-20\u21922024-04-11"
+      }
+    }
+  }
+}

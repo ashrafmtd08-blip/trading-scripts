@@ -54,17 +54,30 @@ def frames_for(sym: str) -> dict:
     """Return {tf_label: dataframe} for whatever data is available."""
     out = {}
     m1p = os.path.join(DATA, f"{sym}_M1.csv")
-    m5p = os.path.join(DATA, f"{sym}_M5.csv")
     if os.path.exists(m1p):
         m1 = _load_csv(m1p)
-        out["M3"] = _resample(m1, "3min")
-        out["M5"] = _resample(m1, "5min")          # from same M1 => consistent
-    elif os.path.exists(m5p):
-        out["M5"] = _load_csv(m5p)                 # bundled M5 only; M3 needs M1
+        out["M3"] = _resample(m1, "3min")          # all three from the same M1 =>
+        out["M5"] = _resample(m1, "5min")          # identical window, fair compare
+        out["M15"] = _resample(m1, "15min")
+        return out
+    # bundled path: M5 + M15 exist, M3 needs M1. Clip M15 to the M5 window so the
+    # two timeframes cover the same period.
+    m5p = os.path.join(DATA, f"{sym}_M5.csv")
+    m15p = os.path.join(DATA, f"{sym}_M15.csv")
+    if os.path.exists(m5p):
+        m5 = _load_csv(m5p)
+        out["M5"] = m5
+        if os.path.exists(m15p):
+            m15 = _load_csv(m15p)
+            lo, hi = m5["Time"].min(), m5["Time"].max()
+            out["M15"] = m15[(m15["Time"] >= lo) & (m15["Time"] <= hi)].reset_index(drop=True)
     return out
 
 
 def main() -> None:
+    import json
+    results = {"meta": {"rr": se.INP_RR, "breakeven": round(100/(1+se.INP_RR), 1)},
+               "instruments": {}}
     hdr = (f"{'Symbol':8} {'TF':4} {'Bars':>8} {'Trades':>7} {'Win':>4} {'Loss':>5} "
            f"{'Win%':>6} {'ExpR':>7} {'TotR':>8} {'PF':>5}  RejT/E/Q/F")
     print("=" * len(hdr))
@@ -79,25 +92,37 @@ def main() -> None:
         if not frames:
             print(f"{sym:8} (no data found in data/xau_btc/)")
             continue
-        for tf in ("M3", "M5"):
+        results["instruments"][sym] = {}
+        for tf in ("M3", "M5", "M15"):
             if tf not in frames:
                 if tf == "M3":
                     missing_m3.append(sym)
                 continue
             df = frames[tf]
             st = se.backtest(df.copy(), sym)
+            win = f"{df['Time'].iloc[0].date()}→{df['Time'].iloc[-1].date()}"
             print(f"{sym:8} {tf:4} {st.bars:8d} {st.valid:7d} {st.wins:4d} "
                   f"{st.losses:5d} {st.win_rate:5.1f}% {st.expectancy:+6.2f}R "
                   f"{st.r_sum:+7.1f}R {st.profit_factor:5.2f}  "
                   f"{st.rej_trend}/{st.rej_ema}/{st.rej_quality}/{st.rej_fvg}")
+            results["instruments"][sym][tf] = {
+                "bars": st.bars, "trades": st.valid, "wins": st.wins,
+                "losses": st.losses, "win_rate": round(st.win_rate, 1),
+                "expectancy": round(st.expectancy, 3), "total_r": round(st.r_sum, 1),
+                "profit_factor": round(st.profit_factor, 2), "window": win,
+            }
         print("-" * len(hdr))
 
-    print(f"Window: XAUUSD ~2023-08→2024-04, BTCUSD ~2023-10→2024-04 (bundled M5).")
     if missing_m3:
         print(f"\nM3 not run for {', '.join(missing_m3)}: needs 1-minute data. "
               f"Add data/xau_btc/<SYM>_M1.csv (e.g. via export_m1.py on your MT5) "
               f"and re-run — it will build M3 (and broker-accurate M5) automatically.")
-    print("No spread/slippage/commission modelled.")
+    print("M5 & M15 on the same window per instrument; no spread/slippage/commission.")
+
+    path = os.path.join(HERE, "xau_btc_results.json")
+    with open(path, "w") as f:
+        json.dump(results, f, indent=2)
+    print(f"Wrote {os.path.basename(path)}.")
 
 
 if __name__ == "__main__":
