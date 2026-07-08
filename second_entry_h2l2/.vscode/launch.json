@@ -1,0 +1,46 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "1 · MT5: Connection test",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/mt5_connect_test.py",
+      "args": ["EURUSD"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "2 · MT5: Run live bot (DRY_RUN)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/mt5_live_bot.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Paper-trade simulation",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/paper_trade.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Backtest — H4 majors",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/second_entry_backtest.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Timeframe study — M3/M5/M15",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/timeframe_backtest.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

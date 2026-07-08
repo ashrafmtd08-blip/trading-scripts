@@ -87,6 +87,27 @@ Only run the bot once this passes.
 
 ---
 
+## Open in VS Code (one-click)
+
+This folder ships with a `.vscode/` config so you don't have to wire anything up:
+
+1. **File → Open Folder** → this folder.
+2. Install the **Python** extension, then Command Palette → **Python: Select
+   Interpreter** → your **64-bit** Python.
+3. Terminal (**Ctrl+`**): `pip install -r requirements.txt`
+   (installs MetaTrader5 on Windows; pandas/numpy/pyarrow everywhere).
+4. Open the **Run and Debug** panel (**Ctrl+Shift+D**) and pick a config:
+   - **1 · MT5: Connection test** — run this first (F5).
+   - **2 · MT5: Run live bot (DRY_RUN)** — the bot, once the test passes.
+   - *Paper-trade simulation*, *Backtest — H4 majors*, *Timeframe study* — no MT5 needed.
+5. Press **F5** to run/debug, or Ctrl+F5 to run without debugging. Set breakpoints
+   in the gutter (e.g. in `place_pending`) to step through a live signal.
+
+> Make sure the interpreter you selected in step 2 is the one you `pip install`ed
+> into — a mismatch is the usual "MetaTrader5 not found" cause.
+
+---
+
 ## Configure
 
 Open `mt5_live_bot.py` and edit the block at the top:
