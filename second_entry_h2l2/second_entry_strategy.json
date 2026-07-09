@@ -33,7 +33,7 @@
     "jpy_pairs": 0.001,
     "other": 1e-05
   },
-  "methodology": "forward-replay vs real bar highs/lows; SL-first on ties; pending order expires if unfilled in 12 bars, then held to real SL/TP with no time stop; NO spread/slippage/commission modelled",
+  "methodology": "forward-replay vs real bar highs/lows; SL-first on ties; pending order expires if unfilled in 12 bars, then held to real SL/TP (no time stop); NO look-ahead \u2014 FVG is a fixed 3-candle pattern (no repaint) and fills start two bars after the signal (after the gap-confirming bar closes); NO spread/slippage/commission modelled",
   "results": {
     "h4_majors_2010_2026": {
       "pairs": [
@@ -46,8 +46,8 @@
       ],
       "trades": 1265,
       "win_rate_pct": 45.8,
-      "expectancy_R": 0.375,
-      "total_R": 448.0,
+      "expectancy_R": 0.373,
+      "total_R": 436.0,
       "profit_factor": 1.69
     },
     "intraday_timeframe_study_2015_2025": {
@@ -63,26 +63,26 @@
       "by_timeframe": {
         "M3": {
           "trades": 16620,
-          "win_rate_pct": 55.8,
-          "expectancy_R": 0.673,
-          "total_R": 9769.0,
-          "profit_factor": 2.52,
+          "win_rate_pct": 56.9,
+          "expectancy_R": 0.708,
+          "total_R": 10156.0,
+          "profit_factor": 2.64,
           "avg_stop_pips": 10.9
         },
         "M5": {
-          "trades": 13808,
-          "win_rate_pct": 54.0,
-          "expectancy_R": 0.62,
-          "total_R": 7795.0,
-          "profit_factor": 2.35,
+          "trades": 13809,
+          "win_rate_pct": 55.3,
+          "expectancy_R": 0.66,
+          "total_R": 8169.0,
+          "profit_factor": 2.48,
           "avg_stop_pips": 12.5
         },
         "M15": {
           "trades": 8307,
-          "win_rate_pct": 51.5,
-          "expectancy_R": 0.546,
-          "total_R": 4247.0,
-          "profit_factor": 2.13,
+          "win_rate_pct": 53.0,
+          "expectancy_R": 0.589,
+          "total_R": 4484.0,
+          "profit_factor": 2.25,
           "avg_stop_pips": 17.7
         }
       },

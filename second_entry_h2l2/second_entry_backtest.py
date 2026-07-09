@@ -326,8 +326,11 @@ def backtest(df: pd.DataFrame, symbol: str,
                             tp = entry - rr * risk
 
                         if risk > 0:
-                            # start replay the bar AFTER the confirming bar
-                            start = max(j, impulse) + 1
+                            # An FVG with middle bar `impulse` is only confirmed at
+                            # the CLOSE of bar impulse+1, so the pending order can
+                            # first fill on impulse+2 — no look-ahead on the
+                            # confirming bar.
+                            start = impulse + 2
                             outcome, r = replay(entry, sl, tp, start, bull)
                             if outcome == "win":
                                 st.wins += 1

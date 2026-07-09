@@ -58,25 +58,27 @@ commission is modelled** — matching the indicator's on-chart methodology.
 
 | Metric | Value |
 |---|---|
-| Tradeable signals | 1,265 (1,196 resolved, 69 cancelled) |
+| Tradeable signals | 1,265 (1,169 resolved, 96 cancelled) |
 | Win rate @ 2R | **45.8%** (break-even 33.3%) |
 | Expectancy | **+0.37R / trade** |
-| Total return | **+448R** |
+| Total return | **+436R** |
 | Profit factor | 1.69 |
-| Max drawdown | −17R |
+| Max drawdown | −14R |
 
-Every pair posted positive expectancy (GBPUSD best at +0.53R, USDCAD weakest at
-+0.26R). Full per-pair table and the equity curve are in the HTML report.
+Every pair posted positive expectancy (GBPUSD best at +0.50R, USDCAD weakest at
++0.27R). Full per-pair table and the equity curve are in the HTML report.
 
 ### Gold &amp; Bitcoin (`xau_btc_backtest.py`)
 
 The strategy was born on Gold M5, so it's also tested on XAUUSD and BTCUSD
-(bundled M5 data, ~2023-08→2024-04):
+(bundled M5 & M15 data, ~2022–2024):
 
 | Symbol | TF | Trades | Win% | Expectancy | Total R | PF |
 |---|---|---|---|---|---|---|
-| XAUUSD | M5 | 299 | 48.8% | +0.46R | +132R | 1.90 |
-| BTCUSD | M5 | 253 | 54.7% | +0.64R | +157R | 2.41 |
+| XAUUSD | M5 | 299 | 50.9% | +0.53R | +147R | 2.07 |
+| XAUUSD | M15 | 112 | 45.3% | +0.36R | +38R | 1.66 |
+| BTCUSD | M5 | 253 | 56.0% | +0.68R | +164R | 2.55 |
+| BTCUSD | M15 | 104 | 55.2% | +0.66R | +63R | 2.47 |
 
 **M3** for these two needs 1-minute data, which isn't freely available for
 Gold/BTC. Export M1 from your own MT5 with `export_m1.py` (writes
@@ -84,11 +86,14 @@ Gold/BTC. Export M1 from your own MT5 with `export_m1.py` (writes
 from it automatically. Gold/BTC point sizes are handled in `point_size()`
 (Gold $0.01, BTC $1).
 
-> **Methodology note:** trades are held to their real SL/TP (a pending order
-> expires only if unfilled within 12 bars). An earlier version time-capped every
-> trade at 12 bars, which systematically discarded winners-in-progress (the 2R
-> target is further than the 1R stop, so it takes longer to reach) and understated
-> the edge. These numbers use the corrected run-to-resolution engine.
+> **Methodology notes:** (1) trades are held to their real SL/TP (a pending order
+> expires only if unfilled within 12 bars) — an earlier version time-capped every
+> trade at 12 bars and understated the edge; these use the run-to-resolution engine.
+> (2) **No look-ahead / no repaint:** the FVG is a fixed 3-candle pattern, and an
+> order can only fill from **two bars after the signal** (after the gap-confirming
+> bar closes). Removing an earlier 1-bar fill look-ahead moved results by <3% —
+> and slightly *raised* the intraday numbers — confirming the edge isn't an
+> artifact of it.
 
 ## Files
 

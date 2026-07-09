@@ -238,6 +238,7 @@ html = f"""<title>Second Entry (H2/L2) — M3 vs M5 vs M15</title>
     <div class="method">
       <div class="item"><h3>One source, three views</h3><p>M3/M5/M15 are resampled from the same M1 (1-minute) OHLCV feed per pair, so differences are purely the timeframe — not different data.</p></div>
       <div class="item"><h3>Identical engine</h3><p>Same EMA(20)/H1-H2/FVG/ADX rules, same 2R target, same forward-replay win/loss (SL-first on ties) as the H4 report. A pending order expires if unfilled in 12 bars; once filled it is held to its real SL or TP (no time stop).</p></div>
+      <div class="item"><h3>No look-ahead</h3><p>The FVG never repaints (a fixed 3-candle pattern), and an order can only fill from two bars after the signal — i.e. after the gap-confirming bar has closed. Nothing uses a bar before it closes.</p></div>
       <div class="item"><h3>No costs modelled</h3><p>Spread, slippage and commission are excluded. This is deliberate — it isolates the timeframe effect on the raw edge, but flatters lower timeframes most, so M3's headline lead is the most cost-sensitive.</p></div>
       <div class="item"><h3>The cost trade-off</h3><p>M3 wins the raw edge but risks ~11-pip stops; M15's ~18-pip stops make it the most robust to spread. The right pick depends on your broker's real intraday costs.</p></div>
       <div class="item"><h3>Data</h3><p>Seven majors (EUR/GBP/JPY/CHF/CAD/AUD/NZD vs USD), Jan 2015–Dec 2025, ~4.0M M1 bars each, from a public parquet dataset.</p></div>
