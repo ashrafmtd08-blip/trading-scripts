@@ -4,7 +4,9 @@ import os
 
 HERE = os.path.dirname(__file__)
 d = json.load(open(os.path.join(HERE, "paper_trade_results.json")))
-cfg, fr, sp = d["config"], d["frictionless"], d["with_spread"]
+cfg, fr, ws = d["config"], d["frictionless"], d["with_spread"]
+sp = d.get("with_costs", d["with_spread"])   # headline = most realistic scenario
+_slip = cfg.get("slippage_pips", 0.0)
 
 payload = json.dumps({
     "spread": [[p["date"], p["balance"]] for p in sp["curve"]],
@@ -96,26 +98,27 @@ html = f"""<title>Paper-Trading Statement — Second Entry (H2/L2) M3</title>
       <span class="chip"><b>Pairs</b> {len(cfg['symbols'])} majors</span>
       <span class="chip"><b>Window</b> {cfg['paper_start']} → 2025-12</span>
       <span class="chip"><b>Risk</b> {cfg['risk_pct']:.0f}% / trade</span>
-      <span class="chip"><b>Spread</b> {sp['spread_pips']:.1f} pip</span>
+      <span class="chip"><b>Costs</b> {sp['spread_pips']:.0f}p spread + {_slip:.1f}p slip</span>
       <span class="chip"><b>Peak open</b> {sp['peak_concurrent_positions']} positions</span>
     </div>
   </header>
 
   <div class="verdict">
     <span class="tag">Read this first</span>
-    <p>With a {sp['spread_pips']:.0f}-pip spread the simulated account grew
+    <p>With realistic costs (a {sp['spread_pips']:.0f}-pip spread <b>and</b>
+    {_slip:.1f}-pip slippage per fill) the simulated account grew
     <b class="pos">{sp['return_pct']:+.0f}%</b> ({fr['return_pct']:+.0f}% with no
-    spread) at a {abs(sp['max_drawdown_pct']):.1f}% max drawdown — the edge survives
-    a realistic spread. <b>But treat this as an optimistic upper bound, not a
-    forecast:</b> the spread alone cut per-trade expectancy by ~{exp_drop:.0f}%
+    costs) at a {abs(sp['max_drawdown_pct']):.1f}% max drawdown — the edge survives,
+    but thinner. <b>Treat it as an upper bound, not a forecast:</b> costs cut
+    per-trade expectancy by ~{exp_drop:.0f}%
     ({fr['expectancy_R']:+.2f}R → {sp['expectancy_R']:+.2f}R), and the model still
-    assumes perfect fills with no slippage, swaps or commission. On M3's tight
-    ~11-pip stops, real slippage will bite hard. A live demo is the real test.</p>
+    assumes a flat spread with no swaps, commission or variable news-time spread.
+    On M3's tight ~11-pip stops these bite hard. A live demo is the real test.</p>
   </div>
 
   <div class="kpis">
     <div class="kpi"><p class="k">End balance</p><div class="v pos">${sp['end_balance']:,.0f}</div><p class="d">from ${cfg['start_balance']:,.0f} · {sp['return_pct']:+.0f}%</p></div>
-    <div class="kpi"><p class="k">Expectancy</p><div class="v pos">{sp['expectancy_R']:+.2f}R</div><p class="d">per trade, after spread</p></div>
+    <div class="kpi"><p class="k">Expectancy</p><div class="v pos">{sp['expectancy_R']:+.2f}R</div><p class="d">per trade, after costs</p></div>
     <div class="kpi"><p class="k">Win rate</p><div class="v">{sp['win_rate']:.1f}%</div><p class="d">{sp['wins']:,}W · {sp['losses']:,}L (BE lowers this)</p></div>
     <div class="kpi"><p class="k">Profit factor</p><div class="v">{sp['profit_factor']:.2f}</div><p class="d">gross win ÷ gross loss</p></div>
     <div class="kpi"><p class="k">Max drawdown</p><div class="v">{sp['max_drawdown_pct']:.1f}%</div><p class="d">on the equity curve</p></div>
@@ -126,11 +129,11 @@ html = f"""<title>Paper-Trading Statement — Second Entry (H2/L2) M3</title>
     <h2>Account equity</h2>
     <p class="lede">Balance after each closed trade (constant 1%-of-initial risk, so
     the curve is linear, not compounded). The faint line is the same run with zero
-    spread — the gap between them is what the spread costs you.</p>
+    costs — the gap between them is what spread + slippage cost you.</p>
     <div class="card">
       <div class="legend">
-        <span><i style="background:var(--gold)"></i>{sp['spread_pips']:.0f}-pip spread</span>
-        <span><i style="background:var(--ref)"></i>no spread (upper bound)</span>
+        <span><i style="background:var(--gold)"></i>with costs (spread + slippage)</span>
+        <span><i style="background:var(--ref)"></i>no costs (upper bound)</span>
       </div>
       <div class="chart-wrap">
         <canvas id="eq" width="1000" height="360" aria-label="Paper-trading equity curve"></canvas>
@@ -141,36 +144,39 @@ html = f"""<title>Paper-Trading Statement — Second Entry (H2/L2) M3</title>
   </section>
 
   <section>
-    <h2>What the spread costs</h2>
-    <p class="lede">Same trades, same signals — the only difference is the modelled
-    spread. This is the single biggest gap between backtest and reality.</p>
+    <h2>What the costs take</h2>
+    <p class="lede">Same trades, same signals — each row just adds a friction layer.
+    Costs are the single biggest gap between backtest and reality, and they compound.</p>
     <table>
       <thead><tr><th>Scenario</th><th class="mono">Win%</th><th class="mono">Expectancy</th><th class="mono">Profit factor</th><th class="mono">Return</th><th class="mono">End balance</th></tr></thead>
       <tbody>
-        <tr><td>No spread (upper bound)</td><td class="mono">{fr['win_rate']:.1f}%</td><td class="mono">{fr['expectancy_R']:+.2f}R</td><td class="mono">{fr['profit_factor']:.2f}</td><td class="mono">{fr['return_pct']:+.0f}%</td><td class="mono">${fr['end_balance']:,.0f}</td></tr>
-        <tr><td>{sp['spread_pips']:.0f}-pip spread</td><td class="mono">{sp['win_rate']:.1f}%</td><td class="mono">{sp['expectancy_R']:+.2f}R</td><td class="mono">{sp['profit_factor']:.2f}</td><td class="mono">{sp['return_pct']:+.0f}%</td><td class="mono">${sp['end_balance']:,.0f}</td></tr>
+        <tr><td>No costs (upper bound)</td><td class="mono">{fr['win_rate']:.1f}%</td><td class="mono">{fr['expectancy_R']:+.2f}R</td><td class="mono">{fr['profit_factor']:.2f}</td><td class="mono">{fr['return_pct']:+.0f}%</td><td class="mono">${fr['end_balance']:,.0f}</td></tr>
+        <tr><td>+ {ws['spread_pips']:.0f}-pip spread</td><td class="mono">{ws['win_rate']:.1f}%</td><td class="mono">{ws['expectancy_R']:+.2f}R</td><td class="mono">{ws['profit_factor']:.2f}</td><td class="mono">{ws['return_pct']:+.0f}%</td><td class="mono">${ws['end_balance']:,.0f}</td></tr>
+        <tr><td>+ {_slip:.1f}-pip slippage</td><td class="mono">{sp['win_rate']:.1f}%</td><td class="mono">{sp['expectancy_R']:+.2f}R</td><td class="mono">{sp['profit_factor']:.2f}</td><td class="mono">{sp['return_pct']:+.0f}%</td><td class="mono">${sp['end_balance']:,.0f}</td></tr>
       </tbody>
     </table>
-    <p class="cap">A single pip of spread erased ~{exp_drop:.0f}% of the per-trade edge. Wider real spreads or any slippage erase more.</p>
+    <p class="cap">Spread + slippage erased ~{exp_drop:.0f}% of the per-trade edge ({fr['expectancy_R']:+.2f}R → {sp['expectancy_R']:+.2f}R). Real variable spread on news erases more.</p>
   </section>
 
   <div class="warn">
     <h3>Why this isn't a green light</h3>
-    <p><b>Idealized fills.</b> Pending orders fill exactly at their stop price with
-    zero slippage. On M3 with ~11-pip stops, real slippage of even 1–2 pips per
-    fill would materially cut the edge — more than the spread does.</p>
+    <p><b>Flat spread + fixed slippage.</b> This models {sp['spread_pips']:.0f} pip of
+    spread and {_slip:.1f} pip of slippage per fill — but real spread <em>widens</em>
+    around news and rollover, exactly when this breakout strategy fires, and stop
+    fills can slip much more in fast moves.</p>
     <p><b>No swaps or commission.</b> Overnight financing and per-lot commission
     aren't modelled; both drag on a high-frequency system.</p>
-    <p><b>Flat spread.</b> Real spreads widen around news and the daily rollover,
-    exactly when this breakout strategy is most active.</p>
-    <p><b>The return magnitude is a red flag, not a promise.</b> A frictionless
-    {fr['return_pct']:+.0f}% says the assumptions are generous. Run
-    <code>mt5_live_bot.py</code> on an MT5 demo for weeks before trusting any of it.</p>
+    <p><b>One vendor feed, one spread.</b> Your broker's bid/ask and fills will
+    differ — sometimes materially — from this single historical series.</p>
+    <p><b>The return magnitude is still generous, not a promise.</b> Even after costs,
+    +{sp['return_pct']:.0f}% assumes flawless execution. Run
+    <code>mt5_live_bot.py</code> (or the EA in the Strategy Tester) on demo for weeks
+    before trusting any of it.</p>
   </div>
 
   <footer>
     <span>Second Entry (H2/L2) · paper-trading simulation</span>
-    <span>{cfg['timeframe']} · {len(cfg['symbols'])} majors · {cfg['paper_start']}–2025-12 · idealized fills</span>
+    <span>{cfg['timeframe']} · {len(cfg['symbols'])} majors · {cfg['paper_start']}–2025-12 · spread + slippage modelled</span>
   </footer>
 </div>
 

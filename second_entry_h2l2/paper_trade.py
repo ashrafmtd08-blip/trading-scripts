@@ -38,6 +38,9 @@ RESAMPLE_RULE   = "3min"
 TF_SECONDS      = 3 * 60
 PAPER_START     = "2025-01-01"    # simulate the most recent ~12 months
 SPREAD_PIPS     = 1.0             # modelled round-trip spread (majors, retail-ish)
+SLIPPAGE_PIPS   = 0.5             # adverse slippage per fill (entry + exit)
+MIN_STOP_PIPS   = 3.0             # skip signals with a tighter stop than a broker
+                                  # would accept (and that costs would destroy)
 ONE_PER_SIDE    = True
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -57,8 +60,8 @@ def load_m1(sym: str) -> pd.DataFrame:
     ).set_index("timestamp_utc").sort_index()
 
 
-def simulate_symbol(sym: str, spread_pips: float) -> list[dict]:
-    """Return a list of closed paper trades for one symbol (R is spread-adjusted)."""
+def simulate_symbol(sym: str, spread_pips: float, slippage_pips: float = 0.0) -> list[dict]:
+    """Return a list of closed paper trades for one symbol (R is cost-adjusted)."""
     m1 = load_m1(sym)
     warm = pd.Timestamp(PAPER_START, tz="UTC") - pd.Timedelta(days=60)
     m1 = m1[m1.index >= warm]
@@ -77,6 +80,8 @@ def simulate_symbol(sym: str, spread_pips: float) -> list[dict]:
     n1 = len(t1)
     pip = pip_size(sym)
     spread = spread_pips * pip
+    slip = slippage_pips * pip
+    min_stop = MIN_STOP_PIPS * pip
     start_epoch = int(pd.Timestamp(PAPER_START, tz="UTC").timestamp())
 
     trades: list[dict] = []
@@ -101,8 +106,9 @@ def simulate_symbol(sym: str, spread_pips: float) -> list[dict]:
         bull = s.side == "BUY"
         entry, sl, tp = s.entry, s.stop, s.target
         r_dist = abs(entry - sl)
-        if r_dist <= 0:
-            continue
+        if r_dist <= 0 or r_dist < min_stop:
+            continue  # too-tight stop: a real broker would reject it, and costs
+                      # would swamp it — exclude, don't pretend we'd trade it
 
         # ---- phase 1: fill within expiry ---------------------------------- #
         fill_k = None
@@ -146,8 +152,8 @@ def simulate_symbol(sym: str, spread_pips: float) -> list[dict]:
             continue  # still open at end of data — drop
 
         exit_epoch = int(t1[kk])
-        # spread: one round-trip, expressed in R
-        realized_r = raw_r - (spread / r_dist)
+        # costs in R: one spread + adverse slippage on entry AND exit fills
+        realized_r = raw_r - (spread + 2.0 * slip) / r_dist
         last_exit_epoch[s.side] = exit_epoch
         trades.append({
             "symbol": sym, "side": s.side,
@@ -157,10 +163,10 @@ def simulate_symbol(sym: str, spread_pips: float) -> list[dict]:
     return trades
 
 
-def run(spread_pips: float = SPREAD_PIPS, label: str = "") -> dict:
+def run(spread_pips: float = SPREAD_PIPS, slippage_pips: float = 0.0, label: str = "") -> dict:
     all_trades: list[dict] = []
     for sym in SYMBOLS:
-        all_trades += simulate_symbol(sym, spread_pips)
+        all_trades += simulate_symbol(sym, spread_pips, slippage_pips)
     all_trades.sort(key=lambda x: x["exit_epoch"])
 
     # peak concurrent open positions (portfolio heat context)
@@ -199,7 +205,7 @@ def run(spread_pips: float = SPREAD_PIPS, label: str = "") -> dict:
     n = len(all_trades)
     res = {
         "label": label or f"{EXEC_TF} spread={spread_pips}p",
-        "spread_pips": spread_pips,
+        "spread_pips": spread_pips, "slippage_pips": slippage_pips,
         "start_balance": START_BALANCE, "end_balance": round(bal, 2),
         "return_pct": round(100 * (bal / START_BALANCE - 1), 1),
         "trades": n, "wins": wins, "losses": losses,
@@ -219,31 +225,35 @@ def main() -> None:
     print(f"Account ${START_BALANCE:,.0f} | risk {RISK_PCT}%/trade | 7 majors | "
           f"{PAPER_START} -> data end | BE at {BREAKEVEN_AT_R}R\n")
 
-    frictionless = run(spread_pips=0.0, label="no spread (upper bound)")
-    withspread   = run(spread_pips=SPREAD_PIPS, label=f"{SPREAD_PIPS}-pip spread")
+    frictionless = run(0.0, 0.0, label="no costs (upper bound)")
+    withspread   = run(SPREAD_PIPS, 0.0, label=f"{SPREAD_PIPS:.0f}-pip spread")
+    withcosts    = run(SPREAD_PIPS, SLIPPAGE_PIPS,
+                       label=f"spread+{SLIPPAGE_PIPS:.1f}p slippage")
 
-    hdr = f"{'Scenario':22} {'Trades':>7} {'Win%':>6} {'ExpR':>7} {'PF':>5} {'Return':>8} {'MaxDD':>7} {'End $':>10}"
+    hdr = f"{'Scenario':24} {'Trades':>7} {'Win%':>6} {'ExpR':>7} {'PF':>5} {'Return':>8} {'MaxDD':>7} {'End $':>10}"
     print(hdr); print("-" * len(hdr))
-    for r in (frictionless, withspread):
-        print(f"{r['label']:22} {r['trades']:7d} {r['win_rate']:5.1f}% "
+    for r in (frictionless, withspread, withcosts):
+        print(f"{r['label']:24} {r['trades']:7d} {r['win_rate']:5.1f}% "
               f"{r['expectancy_R']:+6.2f}R {r['profit_factor']:5.2f} "
               f"{r['return_pct']:+7.1f}% {r['max_drawdown_pct']:6.1f}% "
               f"{r['end_balance']:>10,.0f}")
 
     out = {"config": {"start_balance": START_BALANCE, "risk_pct": RISK_PCT,
                       "symbols": SYMBOLS, "timeframe": EXEC_TF,
-                      "paper_start": PAPER_START, "breakeven_at_r": BREAKEVEN_AT_R},
-           "frictionless": frictionless, "with_spread": withspread}
+                      "paper_start": PAPER_START, "breakeven_at_r": BREAKEVEN_AT_R,
+                      "spread_pips": SPREAD_PIPS, "slippage_pips": SLIPPAGE_PIPS,
+                      "min_stop_pips": MIN_STOP_PIPS},
+           "frictionless": frictionless, "with_spread": withspread,
+           "with_costs": withcosts}
     path = os.path.join(HERE, "paper_trade_results.json")
     with open(path, "w") as f:
         json.dump(out, f, indent=2)
     print(f"\nWrote {os.path.basename(path)}.  Peak concurrent positions: "
-          f"{withspread['peak_concurrent_positions']}.")
-    print("Model: constant risk = 1% of the INITIAL balance per trade (no "
-          "compounding); flat modelled spread; idealized fills (no slippage, swap "
-          "or commission). Returns are an optimistic upper bound — real demo/live "
-          "results will be materially lower. For a true forward test run "
-          "mt5_live_bot.py on your MT5 demo.")
+          f"{withcosts['peak_concurrent_positions']}.")
+    print(f"Model: constant 1%-of-initial risk (no compounding); {SPREAD_PIPS:.0f}-pip "
+          f"spread + {SLIPPAGE_PIPS:.1f}-pip slippage per fill; stops < {MIN_STOP_PIPS:.0f} "
+          f"pips skipped (broker would reject). Still idealized (flat spread, no swaps/"
+          f"commission, one vendor feed). A live demo / Strategy Tester is the real test.")
 
 
 if __name__ == "__main__":
