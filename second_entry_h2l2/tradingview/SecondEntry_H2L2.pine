@@ -1,0 +1,207 @@
+//@version=5
+// =====================================================================
+//  Second Entry (H2/L2) — signals with Entry / SL / TP
+//  Pine Script port of the Python/MQL5 strategy: EMA(20) trend, a failed
+//  first break (H1/L1), a DEEPER pull-back, then the second break as the
+//  signal — gated by bar quality, EMA-touch, trend/ADX, and a 3-candle
+//  Fair Value Gap. Fixed 2R target.
+//
+//  Non-repainting: the H2/L2 pattern is detected on closed bars and the
+//  signal only prints once the FVG-confirming bar closes (1–2 bars after
+//  the second-break bar) — when a live bot could actually act. Entry/SL/TP
+//  are computed from the (past, fixed) second-break bar, so they never
+//  redraw.
+// =====================================================================
+indicator("Second Entry (H2/L2)", overlay=true, max_lines_count=500, max_labels_count=200)
+
+// ---- inputs (defaults match the backtested config) ------------------
+emaPeriod     = input.int(20,    "EMA period")
+adxPeriod     = input.int(14,    "ADX period")
+adxMin        = input.float(15,  "ADX minimum")
+trendLookback = input.int(5,     "Trend lookback (EMA slope bars)")
+closePosRatio = input.float(0.50,"Bar-quality close ratio", minval=0, maxval=1, step=0.05)
+emaTouchPts   = input.int(300,   "EMA-touch (points)")
+bufferPts     = input.int(20,    "Entry/SL buffer (points)")
+rr            = input.float(2.0, "Reward : Risk")
+showLevels    = input.bool(true, "Draw Entry / SL / TP lines")
+levelBars     = input.int(12,    "Level length (bars)")
+
+// ---- indicators -----------------------------------------------------
+ema = ta.ema(close, emaPeriod)
+[diP, diM, adxVal] = ta.dmi(adxPeriod, adxPeriod)
+slope  = ema - ema[trendLookback]
+point  = syminfo.mintick
+touch  = emaTouchPts * point
+buffer = bufferPts  * point
+plot(ema, "EMA", color=color.new(color.orange, 0), linewidth=1)
+
+qualityBull = (high > low) and close > open and (close - low) / (high - low) >= closePosRatio
+qualityBear = (high > low) and close < open and (high - close) / (high - low) >= closePosRatio
+trendBull   = adxVal >= adxMin and slope > 0
+trendBear   = adxVal >= adxMin and slope < 0
+
+// =====================================================================
+//  BULL (H2) pull-back state machine
+// =====================================================================
+var bool  bPb    = false
+var float bExt   = na
+var float bGap   = na
+var bool  bH1    = false
+var float bH1ref = na
+var bool  bDeep  = false
+var bool  buPend = false
+var int   buAge  = 0
+var float buEntry= na
+var float buHjm1 = na
+var float buHj   = na
+var float buLj   = na
+var float buLj1  = na
+
+if not bPb
+    if close > ema and low < low[1]
+        bPb  := true
+        bExt := low
+        bGap := low - ema
+        bH1  := false
+        bDeep := false
+else
+    if close < ema - touch
+        bPb := false
+    else
+        bExt := math.min(bExt, low)
+        bGap := math.min(bGap, low - ema)
+        upBreak = high > high[1]
+        if upBreak and not bH1
+            bH1    := true
+            bH1ref := bExt
+        else
+            if bH1 and not bDeep and bExt < bH1ref
+                bDeep := true
+            if upBreak and bH1 and bDeep
+                if qualityBull and (bGap <= touch) and trendBull
+                    buPend  := true
+                    buAge   := 0
+                    buEntry := high + buffer
+                    buHjm1  := high[1]
+                    buHj    := high
+                    buLj    := low
+                    buLj1   := na
+                bPb := false
+
+bool  buSig = false
+float buE   = na
+float buSL  = na
+float buTP  = na
+if buPend
+    buAge := buAge + 1
+    if buAge == 1
+        buLj1 := low
+        if low > buHjm1
+            buSig  := true
+            buE    := buEntry
+            buSL   := buLj - buffer
+            buPend := false
+    else if buAge == 2
+        if low > buHj
+            buSig := true
+            buE   := buEntry
+            buSL  := buLj1 - buffer
+        buPend := false
+if buSig and (buE - buSL) > 0
+    buTP := buE + rr * (buE - buSL)
+
+// =====================================================================
+//  BEAR (L2) — exact mirror
+// =====================================================================
+var bool  sPb    = false
+var float sExt   = na
+var float sGap   = na
+var bool  sH1    = false
+var float sH1ref = na
+var bool  sDeep  = false
+var bool  sePend = false
+var int   seAge  = 0
+var float seEntry= na
+var float seLjm1 = na
+var float seLj   = na
+var float seHj   = na
+var float seHj1  = na
+
+if not sPb
+    if close < ema and high > high[1]
+        sPb  := true
+        sExt := high
+        sGap := ema - high
+        sH1  := false
+        sDeep := false
+else
+    if close > ema + touch
+        sPb := false
+    else
+        sExt := math.max(sExt, high)
+        sGap := math.min(sGap, ema - high)
+        dnBreak = low < low[1]
+        if dnBreak and not sH1
+            sH1    := true
+            sH1ref := sExt
+        else
+            if sH1 and not sDeep and sExt > sH1ref
+                sDeep := true
+            if dnBreak and sH1 and sDeep
+                if qualityBear and (sGap <= touch) and trendBear
+                    sePend  := true
+                    seAge   := 0
+                    seEntry := low - buffer
+                    seLjm1  := low[1]
+                    seLj    := low
+                    seHj    := high
+                    seHj1   := na
+                sPb := false
+
+bool  seSig = false
+float seE   = na
+float seSL  = na
+float seTP  = na
+if sePend
+    seAge := seAge + 1
+    if seAge == 1
+        seHj1 := high
+        if high < seLjm1
+            seSig  := true
+            seE    := seEntry
+            seSL   := seHj + buffer
+            sePend := false
+    else if seAge == 2
+        if high < seLj
+            seSig := true
+            seE   := seEntry
+            seSL  := seHj1 + buffer
+        sePend := false
+if seSig and (seSL - seE) > 0
+    seTP := seE - rr * (seSL - seE)
+
+// =====================================================================
+//  Drawing
+// =====================================================================
+f_fmt(x) => str.tostring(x, format.mintick)
+
+plotshape(buSig, title="BUY",  style=shape.triangleup,   location=location.belowbar, color=color.new(color.teal, 0), size=size.small, text="H2")
+plotshape(seSig, title="SELL", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0),  size=size.small, text="L2")
+
+if showLevels and buSig
+    x2 = bar_index + levelBars
+    line.new(bar_index, buE,  x2, buE,  color=color.gray,  style=line.style_dashed)
+    line.new(bar_index, buSL, x2, buSL, color=color.red,   width=1)
+    line.new(bar_index, buTP, x2, buTP, color=color.green, width=1)
+    label.new(bar_index, buSL, "BUY  E " + f_fmt(buE) + "  SL " + f_fmt(buSL) + "  TP " + f_fmt(buTP), style=label.style_label_up, color=color.new(color.teal, 20), textcolor=color.white, size=size.small)
+
+if showLevels and seSig
+    x2 = bar_index + levelBars
+    line.new(bar_index, seE,  x2, seE,  color=color.gray,  style=line.style_dashed)
+    line.new(bar_index, seSL, x2, seSL, color=color.red,   width=1)
+    line.new(bar_index, seTP, x2, seTP, color=color.green, width=1)
+    label.new(bar_index, seSL, "SELL  E " + f_fmt(seE) + "  SL " + f_fmt(seSL) + "  TP " + f_fmt(seTP), style=label.style_label_down, color=color.new(color.red, 20), textcolor=color.white, size=size.small)
+
+// ---- alerts ---------------------------------------------------------
+alertcondition(buSig, "Second Entry BUY (H2)",  "H2 BUY {{ticker}} {{interval}}")
+alertcondition(seSig, "Second Entry SELL (L2)", "L2 SELL {{ticker}} {{interval}}")
