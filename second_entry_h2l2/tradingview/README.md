@@ -1,8 +1,17 @@
-# Second Entry (H2/L2) — TradingView indicator
+# Second Entry (H2/L2) — TradingView
 
-`SecondEntry_H2L2.pine` — a Pine Script v5 **indicator** that marks BUY (H2) and
-SELL (L2) signals and draws each trade's **Entry / SL / TP**. Same rules as the
-Python/MQL5 versions (EMA-20 trend, failed first break, deeper pull-back, second
+Two Pine Script v5 files, same detection logic:
+
+- **`SecondEntry_H2L2.pine`** — an **indicator**: marks BUY/SELL signals and draws
+  Entry / SL / TP. Use it to *see* setups and get alerts.
+- **`SecondEntry_H2L2_Strategy.pine`** — a **strategy**: places real pending stop
+  entries with SL/TP brackets so TradingView's **Strategy Tester** reports win
+  rate, net profit, profit factor and drawdown. Set commission/slippage in the
+  strategy's **Properties** tab for realistic costs. It risks ~1% of equity per
+  trade (exact for USD-quote pairs, approximate otherwise), and pending orders
+  expire after 12 bars.
+
+Same rules throughout (EMA-20 trend, failed first break, deeper pull-back, second
 break, gated by bar quality + EMA-touch + trend/ADX + a 3-candle Fair Value Gap,
 fixed 2R target).
 

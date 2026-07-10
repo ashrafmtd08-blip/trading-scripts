@@ -1,0 +1,240 @@
+//@version=5
+// =====================================================================
+//  Second Entry (H2/L2) — STRATEGY (TradingView backtester)
+//  Same detection as the indicator, but places real pending stop entries
+//  with SL/TP brackets so TradingView's Strategy Tester reports win rate,
+//  net profit, profit factor and drawdown.
+//
+//  Sizing risks ~InpRisk% of equity per trade (exact for USD-quote pairs,
+//  approximate otherwise). Set commission/slippage in the Properties tab
+//  for realistic costs — that is the whole point of testing on your broker.
+// =====================================================================
+strategy("Second Entry (H2/L2) Strategy", overlay=true, initial_capital=10000,
+     default_qty_type=strategy.fixed, default_qty_value=1, pyramiding=1,
+     currency=currency.USD, slippage=2,
+     commission_type=strategy.commission.percent, commission_value=0.0,
+     max_lines_count=100, max_labels_count=100)
+
+// ---- inputs ---------------------------------------------------------
+emaPeriod     = input.int(20,    "EMA period")
+adxPeriod     = input.int(14,    "ADX period")
+adxMin        = input.float(15,  "ADX minimum")
+trendLookback = input.int(5,     "Trend lookback (EMA slope bars)")
+closePosRatio = input.float(0.50,"Bar-quality close ratio", minval=0, maxval=1, step=0.05)
+emaTouchPts   = input.int(300,   "EMA-touch (points)")
+bufferPts     = input.int(20,    "Entry/SL buffer (points)")
+rr            = input.float(2.0, "Reward : Risk")
+riskPct       = input.float(1.0, "Risk % of equity per trade")
+expiryBars    = input.int(12,    "Pending order expiry (bars)")
+requireFVG    = input.bool(true, "Require FVG",         group="Filters")
+requireTrend  = input.bool(true, "Require trend / ADX", group="Filters")
+requireQual   = input.bool(true, "Require bar-quality", group="Filters")
+requireTouch  = input.bool(true, "Require EMA-touch",   group="Filters")
+
+// ---- indicators -----------------------------------------------------
+ema = ta.ema(close, emaPeriod)
+[diP, diM, adxVal] = ta.dmi(adxPeriod, adxPeriod)
+slope  = ema - ema[trendLookback]
+point  = syminfo.mintick
+touch  = emaTouchPts * point
+buffer = bufferPts  * point
+plot(ema, "EMA", color=color.new(color.orange, 0), linewidth=1)
+
+qualityBull = (high > low) and close > open and (close - low) / (high - low) >= closePosRatio
+qualityBear = (high > low) and close < open and (high - close) / (high - low) >= closePosRatio
+trendBull   = adxVal >= adxMin and slope > 0
+trendBear   = adxVal >= adxMin and slope < 0
+
+bool  buSig = false
+float buE = na
+float buSL = na
+float buTP = na
+bool  seSig = false
+float seE = na
+float seSL = na
+float seTP = na
+
+// =====================================================================
+//  BULL (H2) detection
+// =====================================================================
+var bool  bPb=false
+var float bExt=na
+var float bGap=na
+var bool  bH1=false
+var float bH1ref=na
+var bool  bDeep=false
+var bool  buPend=false
+var int   buAge=0
+var float buEntry=na
+var float buHjm1=na
+var float buHj=na
+var float buLj=na
+var float buLj1=na
+
+if not bPb
+    if close > ema and low < low[1]
+        bPb := true
+        bExt := low
+        bGap := low - ema
+        bH1 := false
+        bDeep := false
+else
+    if close < ema - touch
+        bPb := false
+    else
+        bExt := math.min(bExt, low)
+        bGap := math.min(bGap, low - ema)
+        upBreak = high > high[1]
+        if upBreak and not bH1
+            bH1 := true
+            bH1ref := bExt
+        else
+            if bH1 and not bDeep and bExt < bH1ref
+                bDeep := true
+            if upBreak and bH1 and bDeep
+                gate = (not requireQual or qualityBull) and (not requireTouch or bGap <= touch) and (not requireTrend or trendBull)
+                if gate
+                    if requireFVG
+                        buPend := true
+                        buAge := 0
+                        buEntry := high + buffer
+                        buHjm1 := high[1]
+                        buHj := high
+                        buLj := low
+                        buLj1 := na
+                    else
+                        buSig := true
+                        buE := high + buffer
+                        buSL := low - buffer
+                bPb := false
+
+if buPend
+    buAge := buAge + 1
+    if buAge == 1
+        buLj1 := low
+        if low > buHjm1
+            buSig := true
+            buE := buEntry
+            buSL := buLj - buffer
+            buPend := false
+    else if buAge == 2
+        if low > buHj
+            buSig := true
+            buE := buEntry
+            buSL := buLj1 - buffer
+        buPend := false
+if buSig and (buE - buSL) > 0
+    buTP := buE + rr * (buE - buSL)
+
+// =====================================================================
+//  BEAR (L2) detection — mirror
+// =====================================================================
+var bool  sPb=false
+var float sExt=na
+var float sGap=na
+var bool  sH1=false
+var float sH1ref=na
+var bool  sDeep=false
+var bool  sePend=false
+var int   seAge=0
+var float seEntry=na
+var float seLjm1=na
+var float seLj=na
+var float seHj=na
+var float seHj1=na
+
+if not sPb
+    if close < ema and high > high[1]
+        sPb := true
+        sExt := high
+        sGap := ema - high
+        sH1 := false
+        sDeep := false
+else
+    if close > ema + touch
+        sPb := false
+    else
+        sExt := math.max(sExt, high)
+        sGap := math.min(sGap, ema - high)
+        dnBreak = low < low[1]
+        if dnBreak and not sH1
+            sH1 := true
+            sH1ref := sExt
+        else
+            if sH1 and not sDeep and sExt > sH1ref
+                sDeep := true
+            if dnBreak and sH1 and sDeep
+                gate = (not requireQual or qualityBear) and (not requireTouch or sGap <= touch) and (not requireTrend or trendBear)
+                if gate
+                    if requireFVG
+                        sePend := true
+                        seAge := 0
+                        seEntry := low - buffer
+                        seLjm1 := low[1]
+                        seLj := low
+                        seHj := high
+                        seHj1 := na
+                    else
+                        seSig := true
+                        seE := low - buffer
+                        seSL := high + buffer
+                sPb := false
+
+if sePend
+    seAge := seAge + 1
+    if seAge == 1
+        seHj1 := high
+        if high < seLjm1
+            seSig := true
+            seE := seEntry
+            seSL := seHj + buffer
+            sePend := false
+    else if seAge == 2
+        if high < seLj
+            seSig := true
+            seE := seEntry
+            seSL := seHj1 + buffer
+        sePend := false
+if seSig and (seSL - seE) > 0
+    seTP := seE - rr * (seSL - seE)
+
+// =====================================================================
+//  Order management (pending stop entry + SL/TP bracket + expiry)
+// =====================================================================
+var int  longBar  = na
+var bool  longWait  = false
+var int  shortBar = na
+var bool  shortWait = false
+
+flat = strategy.position_size == 0
+idle = flat and not longWait and not shortWait          // one order at a time
+
+// BUY: pending stop entry with SL/TP bracket armed on fill
+if buSig and (buE - buSL) > 0 and idle
+    q = math.max(1.0, (strategy.equity * riskPct / 100.0) / (buE - buSL))
+    strategy.entry("Long", strategy.long, qty=q, stop=buE)
+    strategy.exit("LongX", from_entry="Long", stop=buSL, limit=buTP)
+    longBar  := bar_index
+    longWait := true
+
+// SELL: mirror
+if seSig and (seSL - seE) > 0 and idle
+    q = math.max(1.0, (strategy.equity * riskPct / 100.0) / (seSL - seE))
+    strategy.entry("Short", strategy.short, qty=q, stop=seE)
+    strategy.exit("ShortX", from_entry="Short", stop=seSL, limit=seTP)
+    shortBar  := bar_index
+    shortWait := true
+
+// clear the "waiting for fill" flag once a position is open
+if strategy.position_size > 0
+    longWait := false
+if strategy.position_size < 0
+    shortWait := false
+
+// cancel a stop entry that never filled within the expiry window
+if longWait and not na(longBar) and (bar_index - longBar >= expiryBars) and flat
+    strategy.cancel("Long")
+    longWait := false
+if shortWait and not na(shortBar) and (bar_index - shortBar >= expiryBars) and flat
+    strategy.cancel("Short")
+    shortWait := false
